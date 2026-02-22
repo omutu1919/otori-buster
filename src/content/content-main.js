@@ -88,6 +88,57 @@
 
     // 写真枚数プリフェッチ開始（一覧ページのみ）
     queuePrefetch(parser, allScores);
+
+    // 通報件数を取得してスコアに反映
+    fetchReportCounts(parser, allScores);
+  }
+
+  /**
+   * サーバーから通報件数を取得し、スコアを再計算
+   */
+  let reportCountsFetched = new Set();
+  function fetchReportCounts(parser, allScores) {
+    const urlToElement = new Map();
+
+    allScores.forEach((_score, element) => {
+      if (reportCountsFetched.has(element)) return;
+      const url = typeof parser.getDetailUrl === 'function' ? parser.getDetailUrl(element) : '';
+      if (url) {
+        urlToElement.set(url, element);
+        reportCountsFetched.add(element);
+      }
+    });
+
+    if (urlToElement.size === 0) return;
+
+    const urls = [...urlToElement.keys()];
+    chrome.runtime.sendMessage({ type: 'FETCH_REPORT_COUNTS', urls }, (response) => {
+      if (chrome.runtime.lastError || !response || !response.ok) return;
+
+      const counts = response.counts || {};
+      let updated = 0;
+
+      urlToElement.forEach((element, url) => {
+        const count = counts[url] || 0;
+        if (count <= 0) return;
+
+        const property = propertyCache.get(element);
+        if (!property) return;
+
+        const updatedProperty = { ...property, reportCount: count };
+        const newScore = ns.scoringEngine.calculate(updatedProperty);
+
+        propertyCache.set(element, updatedProperty);
+        latestScores.set(element, newScore);
+        ns.overlay.update(element, newScore, updatedProperty);
+        updated++;
+      });
+
+      if (updated > 0) {
+        saveSummary(currentSiteName, latestScores);
+        console.log(`[おとり物件バスター] ${updated}件に通報件数を反映`);
+      }
+    });
   }
 
   /**

@@ -18,7 +18,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'REPORT_OTORI') {
     handleReport(message.data).then(sendResponse);
-    return true; // 非同期レスポンス
+    return true;
+  }
+
+  if (message.type === 'FETCH_REPORT_COUNTS') {
+    fetchReportCounts(message.urls).then(sendResponse);
+    return true;
   }
 
   return true;
@@ -103,6 +108,35 @@ async function saveReportLocally(data) {
   // 最大500件保持
   const trimmed = reports.length > 500 ? reports.slice(-500) : reports;
   await chrome.storage.local.set({ reports: trimmed });
+}
+
+/**
+ * 通報件数をサーバーから取得
+ * @param {string[]} urls
+ * @returns {Promise<{ok: boolean, counts?: Object}>}
+ */
+async function fetchReportCounts(urls) {
+  try {
+    const settings = await chrome.storage.local.get({ reportApiUrl: REPORT_API_URL });
+    const apiUrl = settings.reportApiUrl;
+
+    if (apiUrl.includes('your-server.example.com')) {
+      return { ok: true, counts: {} };
+    }
+
+    const response = await fetch(`${apiUrl}/counts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ urls })
+    });
+
+    if (!response.ok) return { ok: false, counts: {} };
+
+    const data = await response.json();
+    return { ok: true, counts: data.counts || {} };
+  } catch (err) {
+    return { ok: false, counts: {}, error: err.message };
+  }
 }
 
 // 拡張機能インストール時の初期設定

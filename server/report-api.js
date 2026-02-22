@@ -34,6 +34,53 @@ app.use(cors({
 
 app.use(express.json({ limit: '1mb' }));
 
+// === スパム対策: レート制限 ===
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1分
+const RATE_LIMIT_MAX_REPORTS = 3;        // 1分あたり最大3件
+
+// 同一URL重複制限
+const DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000; // 24時間
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const key = `rate:${ip}`;
+  const entry = rateLimitMap.get(key);
+
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitMap.set(key, { windowStart: now, count: 1 });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX_REPORTS) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+}
+
+function checkDuplicate(url, ip) {
+  const reports = loadReports();
+  const cutoff = Date.now() - DUPLICATE_WINDOW_MS;
+
+  return !reports.some(r =>
+    r.url === url &&
+    r.ip === ip &&
+    new Date(r.receivedAt).getTime() > cutoff
+  );
+}
+
+// 古いレート制限エントリを定期クリーン
+setInterval(() => {
+  const now = Date.now();
+  rateLimitMap.forEach((entry, key) => {
+    if (now - entry.windowStart > RATE_LIMIT_WINDOW_MS * 2) {
+      rateLimitMap.delete(key);
+    }
+  });
+}, 5 * 60 * 1000);
+
 /**
  * 通報データをファイルから読み込み
  */
@@ -88,10 +135,21 @@ function validateReport(data) {
 // === POST /api/otori-report === 通報を受信
 app.post('/api/otori-report', (req, res) => {
   const data = req.body;
+  const clientIp = req.headers['x-real-ip'] || req.ip;
+
+  // レート制限チェック
+  if (!checkRateLimit(clientIp)) {
+    return res.status(429).json({ ok: false, error: '通報の送信が多すぎます。1分後にお試しください。' });
+  }
 
   const errors = validateReport(data);
   if (errors.length > 0) {
     return res.status(400).json({ ok: false, errors });
+  }
+
+  // 同一URL+同一IPの24時間以内の重複チェック
+  if (!checkDuplicate(data.url, clientIp)) {
+    return res.status(409).json({ ok: false, error: 'この物件は24時間以内に通報済みです。' });
   }
 
   const report = {
@@ -121,7 +179,7 @@ app.post('/api/otori-report', (req, res) => {
     // メタデータ
     reportedAt: data.reportedAt || new Date().toISOString(),
     pageUrl: (data.pageUrl || '').slice(0, 500),
-    ip: req.ip,
+    ip: req.headers['x-real-ip'] || req.ip,
     userAgent: req.headers['user-agent'] || '',
     receivedAt: new Date().toISOString()
   };
@@ -151,6 +209,29 @@ app.get('/api/otori-report', (req, res) => {
     limit,
     reports: page
   });
+});
+
+// === POST /api/otori-report/counts === URL別通報件数（拡張機能スコアリング用）
+app.post('/api/otori-report/counts', (req, res) => {
+  const urls = req.body.urls;
+  if (!Array.isArray(urls) || urls.length === 0) {
+    return res.status(400).json({ ok: false, error: 'urls array is required' });
+  }
+
+  // 最大100件に制限
+  const targetUrls = urls.slice(0, 100);
+  const reports = loadReports();
+
+  const counts = {};
+  targetUrls.forEach(url => { counts[url] = 0; });
+
+  reports.forEach(r => {
+    if (counts[r.url] !== undefined) {
+      counts[r.url]++;
+    }
+  });
+
+  res.json({ ok: true, counts });
 });
 
 // === GET /api/otori-report/stats === 統計情報

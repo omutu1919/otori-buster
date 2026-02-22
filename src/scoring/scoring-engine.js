@@ -11,11 +11,12 @@ window.__otoriBuster.scoringEngine = (() => {
   const { parserUtils, marketData } = window.__otoriBuster;
 
   const WEIGHTS = Object.freeze({
-    PRICE_GAP: 0.35,
-    ADDRESS_VAGUE: 0.20,
-    NO_NAME: 0.15,
+    PRICE_GAP: 0.30,
+    ADDRESS_VAGUE: 0.15,
+    NO_NAME: 0.10,
     FEW_PHOTOS: 0.15,
-    TOO_CHEAP: 0.15
+    TOO_CHEAP: 0.15,
+    REPORT_COUNT: 0.15
   });
 
   function getLevel(score) {
@@ -159,13 +160,38 @@ window.__otoriBuster.scoringEngine = (() => {
     };
   }
 
+  /** 因子6: 通報件数（他ユーザーからの通報） */
+  function scoreReportCount(property) {
+    const count = property.reportCount || 0;
+
+    if (count <= 0) {
+      return { name: '通報件数', rawScore: 0, weight: WEIGHTS.REPORT_COUNT, weightedScore: 0, reason: '通報なし' };
+    }
+
+    let rawScore;
+    let reason;
+    if (count >= 3) {
+      rawScore = 100;
+      reason = `${count}件の通報あり（複数ユーザーが報告）`;
+    } else if (count >= 2) {
+      rawScore = 70;
+      reason = `${count}件の通報あり`;
+    } else {
+      rawScore = 40;
+      reason = '1件の通報あり';
+    }
+
+    return { name: '通報件数', rawScore, weight: WEIGHTS.REPORT_COUNT, weightedScore: Math.round(rawScore * WEIGHTS.REPORT_COUNT), reason };
+  }
+
   function calculate(property) {
     const factors = [
       scorePriceGap(property),
       scoreAddressVague(property),
       scoreNoName(property),
       scoreFewPhotos(property),
-      scoreTooCheap(property)
+      scoreTooCheap(property),
+      scoreReportCount(property)
     ];
 
     const total = factors.reduce((sum, f) => sum + f.weightedScore, 0);
