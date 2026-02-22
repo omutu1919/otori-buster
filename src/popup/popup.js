@@ -10,6 +10,21 @@
   const statusText = document.getElementById('statusText');
   const summarySection = document.getElementById('summarySection');
 
+  // アフィリエイトリンク生成
+  const aff = window.__otoriBuster && window.__otoriBuster.AFFILIATE;
+  if (aff) {
+    const adsSection = document.getElementById('adsSection');
+    aff.links.forEach(link => {
+      const a = document.createElement('a');
+      a.href = aff.buildUrl(link.keyword);
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.className = 'popup__ad-link';
+      a.textContent = link.text;
+      adsSection.appendChild(a);
+    });
+  }
+
   // 設定読み込み
   chrome.storage.local.get({ enabled: true }, (settings) => {
     toggleEl.checked = settings.enabled;

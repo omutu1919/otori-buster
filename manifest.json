@@ -30,6 +30,7 @@
         "*://realestate.yahoo.co.jp/rent/*"
       ],
       "js": [
+        "src/config/affiliate.js",
         "src/types/index.js",
         "src/parsers/parser-utils.js",
         "src/market/market-data.js",

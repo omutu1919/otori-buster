@@ -138,6 +138,29 @@ window.__otoriBuster.overlay = (() => {
         color: #aaa;
         text-align: center;
       }
+
+      .otori-panel__ad {
+        display: block;
+        margin-top: 6px;
+        padding: 6px 10px;
+        background: #f5f5f5;
+        border-radius: 6px;
+        color: #1565c0;
+        text-decoration: none;
+        font-size: 11px;
+        transition: background 0.2s;
+      }
+
+      .otori-panel__ad:hover {
+        background: #e8e8e8;
+        text-decoration: underline;
+      }
+
+      .otori-panel__ad-label {
+        font-size: 9px;
+        color: #999;
+        margin-right: 4px;
+      }
     `;
   }
 
@@ -169,6 +192,12 @@ window.__otoriBuster.overlay = (() => {
     badge.innerHTML = `<span class="otori-badge__score">${score.total}</span><span class="otori-badge__label">${LEVEL_LABELS[score.level]}</span>`;
     shadow.appendChild(badge);
 
+    // アフィリエイトリンク
+    const aff = window.__otoriBuster.AFFILIATE;
+    const adLink = aff ? aff.links[0] : null;
+    const adUrl = adLink ? aff.buildUrl(adLink.keyword) : '';
+    const adText = adLink ? adLink.text : '';
+
     // パネル
     const panel = document.createElement('div');
     panel.className = 'otori-panel';
@@ -193,7 +222,10 @@ window.__otoriBuster.overlay = (() => {
         <button class="otori-panel__close" aria-label="閉じる">&times;</button>
       </div>
       <div class="otori-panel__body">${factorsHTML}</div>
-      <div class="otori-panel__footer">おとり物件バスター - スコアは参考値です</div>
+      <div class="otori-panel__footer">
+        おとり物件バスター - スコアは参考値です
+        <a href="${adUrl}" target="_blank" rel="noopener" class="otori-panel__ad"><span class="otori-panel__ad-label">PR</span>${adText}</a>
+      </div>
     `;
     shadow.appendChild(panel);
 
@@ -228,7 +260,11 @@ window.__otoriBuster.overlay = (() => {
 
     // パネル内のクリック/マウスイベントが外に漏れないようにする
     panel.addEventListener('mousedown', (e) => { e.stopPropagation(); });
-    panel.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); });
+    panel.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // アフィリエイトリンクのクリックは許可
+      if (!e.target.closest('a')) e.preventDefault();
+    });
     host.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); });
 
     element.appendChild(host);
