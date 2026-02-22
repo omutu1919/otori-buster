@@ -187,6 +187,38 @@ window.__otoriBuster.parserUtils = (() => {
     return match ? parseFloat(match[1]) : 0;
   }
 
+  /**
+   * 不動産会社名を抽出（共通ロジック）
+   * @param {Element} container
+   * @param {string[]} [extraSelectors] - サイト固有の追加セレクタ
+   * @returns {string}
+   */
+  function extractCompany(container, extraSelectors) {
+    // Try extra selectors first (site-specific)
+    if (extraSelectors) {
+      for (const sel of extraSelectors) {
+        const el = container.querySelector(sel);
+        if (el && el.textContent.trim()) return el.textContent.trim().slice(0, 100);
+      }
+    }
+    // Generic: check th/dt labels
+    const labels = container.querySelectorAll('th, dt');
+    for (const label of labels) {
+      const text = label.textContent.trim();
+      if (/取扱|会社名|不動産会社|仲介/.test(text)) {
+        const next = label.nextElementSibling;
+        if (next && next.textContent.trim()) return next.textContent.trim().slice(0, 100);
+      }
+    }
+    // Try common class patterns
+    const classSelectors = ['[class*="company"]', '[class*="agency"]', '[class*="shop"]', '[class*="kaisha"]'];
+    for (const sel of classSelectors) {
+      const el = container.querySelector(sel);
+      if (el && el.textContent.trim()) return el.textContent.trim().slice(0, 100);
+    }
+    return '';
+  }
+
   return Object.freeze({
     normalizeDigits,
     parseRent,
@@ -199,6 +231,23 @@ window.__otoriBuster.parserUtils = (() => {
     parseWalkMinutes,
     safeText,
     safeCount,
-    parseArea
+    parseArea,
+    extractCompany
   });
+})();
+
+// デバッグログ（本番ではオフ）
+;(() => {
+  const ns = window.__otoriBuster;
+  const DEBUG = false;
+  function log(...args) {
+    if (DEBUG) console.log('[おとり物件バスター]', ...args);
+  }
+  function warn(...args) {
+    if (DEBUG) console.warn('[おとり物件バスター]', ...args);
+  }
+  function error(...args) {
+    if (DEBUG) console.error('[おとり物件バスター]', ...args);
+  }
+  ns.logger = Object.freeze({ log, warn, error, DEBUG });
 })();

@@ -9,6 +9,7 @@ window.__otoriBuster = window.__otoriBuster || {};
 window.__otoriBuster.photoPrefetch = (() => {
   'use strict';
 
+  const { logger } = window.__otoriBuster;
   const FETCH_DELAY_MS = 800;
   const cache = new Map();
 
@@ -45,7 +46,7 @@ window.__otoriBuster.photoPrefetch = (() => {
       cache.set(url, count);
       return count;
     } catch (err) {
-      console.warn('[おとり物件バスター] プリフェッチエラー:', err.message);
+      logger.warn('プリフェッチエラー:', err.message);
       return -1;
     }
   }

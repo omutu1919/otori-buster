@@ -15,23 +15,11 @@ window.__otoriBuster = window.__otoriBuster || {};
 window.__otoriBuster.homesParser = (() => {
   'use strict';
 
-  const { parserUtils } = window.__otoriBuster;
-  const { safeText, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes } = parserUtils;
-
-  function extractCompany(container) {
-    const el = container.querySelector('.bukkenAgency, [class*="agency"], [class*="company"]');
-    if (el) return el.textContent.trim().slice(0, 100);
-    const ths = container.querySelectorAll('th, dt');
-    for (const th of ths) {
-      if (th.textContent.trim().match(/取扱|会社|不動産/)) {
-        const next = th.nextElementSibling;
-        if (next) return next.textContent.trim().slice(0, 100);
-      }
-    }
-    return '';
-  }
+  const { parserUtils, logger } = window.__otoriBuster;
+  const { safeText, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes, extractCompany } = parserUtils;
 
   const SITE_NAME = 'homes';
+  const HOMES_COMPANY_SELECTORS = ['.bukkenAgency'];
 
   function canParse() {
     return location.hostname.endsWith('homes.co.jp') && location.pathname.includes('/chintai/');
@@ -98,13 +86,13 @@ window.__otoriBuster.homesParser = (() => {
             age: -1,
             station: stationText,
             walkMinutes: parseWalkMinutes(stationText),
-            company: extractCompany(building),
+            company: extractCompany(building, HOMES_COMPANY_SELECTORS),
             source: SITE_NAME,
             element: building
           });
         });
       } catch (err) {
-        console.error('[おとり物件バスター] HOME\'S解析エラー:', err);
+        logger.error('HOME\'S解析エラー:', err);
       }
     });
 
@@ -151,7 +139,7 @@ window.__otoriBuster.homesParser = (() => {
       age: parseAge(ageText),
       station: stationText,
       walkMinutes: parseWalkMinutes(stationText),
-      company: extractCompany(document.body),
+      company: extractCompany(document.body, HOMES_COMPANY_SELECTORS),
       source: SITE_NAME,
       element: targetEl
     }];
@@ -167,7 +155,7 @@ window.__otoriBuster.homesParser = (() => {
   function parse() {
     if (isDetailPage()) {
       try { return parseDetailPage(); }
-      catch (err) { console.error('[おとり物件バスター] HOME\'S詳細エラー:', err); return []; }
+      catch (err) { logger.error('HOME\'S詳細エラー:', err); return []; }
     }
     return parseListPage();
   }

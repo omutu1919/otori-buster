@@ -8,6 +8,12 @@ window.__otoriBuster = window.__otoriBuster || {};
 window.__otoriBuster.overlay = (() => {
   'use strict';
 
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+  }
+
   const COLORS = Object.freeze({
     safe:    { badge: '#4caf50' },
     caution: { badge: '#ffc107' },
@@ -223,7 +229,7 @@ window.__otoriBuster.overlay = (() => {
     const badge = document.createElement('div');
     badge.className = 'otori-badge';
     badge.style.background = colors.badge;
-    badge.innerHTML = `<span class="otori-badge__score">${score.total}</span><span class="otori-badge__label">${LEVEL_LABELS[score.level]}</span>`;
+    badge.innerHTML = `<span class="otori-badge__score">${escapeHtml(String(score.total))}</span><span class="otori-badge__label">${escapeHtml(LEVEL_LABELS[score.level] || '')}</span>`;
     shadow.appendChild(badge);
 
     // アフィリエイトリンク
@@ -237,29 +243,30 @@ window.__otoriBuster.overlay = (() => {
     panel.className = 'otori-panel';
 
     const factorsHTML = score.factors.map(f => {
-      const barColor = f.rawScore >= 70 ? '#f44336' : f.rawScore >= 45 ? '#ff9800' : f.rawScore >= 20 ? '#ffc107' : '#4caf50';
+      const safeRawScore = Math.min(100, Math.max(0, Number(f.rawScore) || 0));
+      const barColor = safeRawScore >= 70 ? '#f44336' : safeRawScore >= 45 ? '#ff9800' : safeRawScore >= 20 ? '#ffc107' : '#4caf50';
       return `<div class="otori-factor">
         <div class="otori-factor__header">
-          <span class="otori-factor__name">${f.name}</span>
-          <span class="otori-factor__score">${f.rawScore}/100 (x${f.weight})</span>
+          <span class="otori-factor__name">${escapeHtml(f.name)}</span>
+          <span class="otori-factor__score">${escapeHtml(String(f.rawScore))}/100 (x${escapeHtml(String(f.weight))})</span>
         </div>
         <div class="otori-factor__bar">
-          <div class="otori-factor__fill" style="width:${f.rawScore}%;background:${barColor}"></div>
+          <div class="otori-factor__fill" style="width:${safeRawScore}%;background:${barColor}"></div>
         </div>
-        <div class="otori-factor__reason">${f.reason}</div>
+        <div class="otori-factor__reason">${escapeHtml(f.reason)}</div>
       </div>`;
     }).join('');
 
     panel.innerHTML = `
       <div class="otori-panel__header" style="background:${colors.badge}">
-        <span>おとりスコア: ${score.total}/100 (${LEVEL_LABELS[score.level]})</span>
+        <span>おとりスコア: ${escapeHtml(String(score.total))}/100 (${escapeHtml(LEVEL_LABELS[score.level] || '')})</span>
         <button class="otori-panel__close" aria-label="閉じる">&times;</button>
       </div>
       <div class="otori-panel__body">${factorsHTML}</div>
       <div class="otori-panel__footer">
         おとり物件バスター - スコアは参考値です
         <button class="otori-panel__report-btn" data-action="report">この物件を通報する</button>
-        <a href="${adUrl}" target="_blank" rel="noopener" class="otori-panel__ad"><span class="otori-panel__ad-label">PR</span>${adText}</a>
+        <a href="${escapeHtml(adUrl)}" target="_blank" rel="noopener" class="otori-panel__ad"><span class="otori-panel__ad-label">PR</span>${escapeHtml(adText)}</a>
       </div>
     `;
     shadow.appendChild(panel);

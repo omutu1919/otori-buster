@@ -11,23 +11,10 @@ window.__otoriBuster = window.__otoriBuster || {};
 window.__otoriBuster.chintaiParser = (() => {
   'use strict';
 
-  const { parserUtils } = window.__otoriBuster;
-  const { safeText, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes, normalizeDigits } = parserUtils;
+  const { parserUtils, logger } = window.__otoriBuster;
+  const { safeText, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes, normalizeDigits, extractCompany } = parserUtils;
 
   const SITE_NAME = 'chintai';
-
-  function extractCompany(container) {
-    const ths = container.querySelectorAll('th, dt');
-    for (const th of ths) {
-      if (th.textContent.trim().match(/取扱|会社|不動産/)) {
-        const next = th.nextElementSibling;
-        if (next) return next.textContent.trim().slice(0, 100);
-      }
-    }
-    const el = container.querySelector('[class*="company"], [class*="agency"], [class*="shop"]');
-    if (el) return el.textContent.trim().slice(0, 100);
-    return '';
-  }
 
   function canParse() {
     return location.hostname.endsWith('chintai.net');
@@ -127,7 +114,7 @@ window.__otoriBuster.chintaiParser = (() => {
           element: card
         });
       } catch (err) {
-        console.error('[おとり物件バスター] CHINTAI解析エラー:', err);
+        logger.error('CHINTAI解析エラー:', err);
       }
     });
 
@@ -171,7 +158,7 @@ window.__otoriBuster.chintaiParser = (() => {
   function parse() {
     if (isDetailPage()) {
       try { return parseDetailPage(); }
-      catch (err) { console.error('[おとり物件バスター] CHINTAI詳細エラー:', err); return []; }
+      catch (err) { logger.error('CHINTAI詳細エラー:', err); return []; }
     }
     return parseListPage();
   }

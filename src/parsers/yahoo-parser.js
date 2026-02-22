@@ -20,23 +20,11 @@ window.__otoriBuster = window.__otoriBuster || {};
 window.__otoriBuster.yahooParser = (() => {
   'use strict';
 
-  const { parserUtils } = window.__otoriBuster;
-  const { safeText, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes, normalizeDigits } = parserUtils;
+  const { parserUtils, logger } = window.__otoriBuster;
+  const { safeText, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes, normalizeDigits, extractCompany } = parserUtils;
 
   const SITE_NAME = 'yahoo';
-
-  function extractCompany(container) {
-    const el = container.querySelector('[class*="Company"], [class*="company"], [class*="Agency"]');
-    if (el) return el.textContent.trim().slice(0, 100);
-    const ths = container.querySelectorAll('th, dt');
-    for (const th of ths) {
-      if (th.textContent.trim().match(/取扱|会社|不動産/)) {
-        const next = th.nextElementSibling;
-        if (next) return next.textContent.trim().slice(0, 100);
-      }
-    }
-    return '';
-  }
+  const YAHOO_COMPANY_SELECTORS = ['[class*="Company"]'];
 
   function canParse() {
     return location.hostname === 'realestate.yahoo.co.jp' &&
@@ -100,7 +88,7 @@ window.__otoriBuster.yahooParser = (() => {
             name, rent: 0, managementFee: 0, address,
             layout: '', photoCount, area: '', age,
             station: stationText, walkMinutes: parseWalkMinutes(stationText),
-            company: extractCompany(building),
+            company: extractCompany(building, YAHOO_COMPANY_SELECTORS),
             source: SITE_NAME, element: building
           });
         } else {
@@ -125,14 +113,14 @@ window.__otoriBuster.yahooParser = (() => {
               age,
               station: stationText,
               walkMinutes: parseWalkMinutes(stationText),
-              company: extractCompany(building),
+              company: extractCompany(building, YAHOO_COMPANY_SELECTORS),
               source: SITE_NAME,
               element: building
             });
           });
         }
       } catch (err) {
-        console.error('[おとり物件バスター] Yahoo!不動産解析エラー:', err);
+        logger.error('Yahoo!不動産解析エラー:', err);
       }
     });
 
@@ -177,7 +165,7 @@ window.__otoriBuster.yahooParser = (() => {
       age: parseAge(ageText),
       station: stationText,
       walkMinutes: parseWalkMinutes(stationText),
-      company: extractCompany(document.body),
+      company: extractCompany(document.body, YAHOO_COMPANY_SELECTORS),
       source: SITE_NAME,
       element: targetEl
     }];
@@ -193,7 +181,7 @@ window.__otoriBuster.yahooParser = (() => {
   function parse() {
     if (isDetailPage()) {
       try { return parseDetailPage(); }
-      catch (err) { console.error('[おとり物件バスター] Yahoo!不動産詳細エラー:', err); return []; }
+      catch (err) { logger.error('Yahoo!不動産詳細エラー:', err); return []; }
     }
     return parseListPage();
   }

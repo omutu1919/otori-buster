@@ -8,8 +8,8 @@ window.__otoriBuster = window.__otoriBuster || {};
 window.__otoriBuster.suumoParser = (() => {
   'use strict';
 
-  const { parserUtils } = window.__otoriBuster;
-  const { safeText, safeCount, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes } = parserUtils;
+  const { parserUtils, logger } = window.__otoriBuster;
+  const { safeText, safeCount, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes, extractCompany } = parserUtils;
 
   const SITE_NAME = 'suumo';
 
@@ -60,32 +60,14 @@ window.__otoriBuster.suumoParser = (() => {
           });
         }
       } catch (err) {
-        console.error('[おとり物件バスター] SUUMO一覧解析エラー:', err);
+        logger.error('SUUMO一覧解析エラー:', err);
       }
     });
 
     return properties;
   }
 
-  /**
-   * 不動産会社名を取得（カードまたはページから）
-   */
-  function extractCompany(container) {
-    // 詳細ページ: テーブルから取得
-    const labels = ['取扱', '会社名', '不動産会社', '仲介'];
-    const ths = container.querySelectorAll('th, dt');
-    for (const th of ths) {
-      const text = th.textContent.trim();
-      if (labels.some(l => text.includes(l))) {
-        const next = th.nextElementSibling;
-        if (next) return next.textContent.trim().slice(0, 100);
-      }
-    }
-    // 一覧ページ: 会社名リンク
-    const companyLink = container.querySelector('a[href*="/kaisha/"], .cassetteitem_detail-text--lead');
-    if (companyLink) return companyLink.textContent.trim().slice(0, 100);
-    return '';
-  }
+  const SUUMO_COMPANY_SELECTORS = ['a[href*="/kaisha/"]', '.cassetteitem_detail-text--lead'];
 
   function makeProperty(card, name, address, photoCount, age, station, walkMinutes, rentText, feeText, layoutText, areaText) {
     return {
@@ -99,7 +81,7 @@ window.__otoriBuster.suumoParser = (() => {
       age,
       station,
       walkMinutes,
-      company: extractCompany(card),
+      company: extractCompany(card, SUUMO_COMPANY_SELECTORS),
       source: SITE_NAME,
       element: card
     };
@@ -155,11 +137,11 @@ window.__otoriBuster.suumoParser = (() => {
                      document.querySelector('h1');
 
     if (!targetEl) {
-      console.log('[おとり物件バスター] SUUMO詳細: バッジ表示先が見つかりません');
+      logger.log('SUUMO詳細: バッジ表示先が見つかりません');
       return [];
     }
 
-    console.log('[おとり物件バスター] SUUMO詳細:', { name, address, rent, layout: layoutText, photoCount });
+    logger.log('SUUMO詳細:', { name, address, rent, layout: layoutText, photoCount });
 
     return [{
       name,
@@ -172,7 +154,7 @@ window.__otoriBuster.suumoParser = (() => {
       age: parseAge(ageText),
       station: stationText,
       walkMinutes: parseWalkMinutes(stationText),
-      company: extractCompany(document.body),
+      company: extractCompany(document.body, SUUMO_COMPANY_SELECTORS),
       source: SITE_NAME,
       element: targetEl
     }];
@@ -201,7 +183,7 @@ window.__otoriBuster.suumoParser = (() => {
       try {
         return parseDetailPage();
       } catch (err) {
-        console.error('[おとり物件バスター] SUUMO詳細ページ解析エラー:', err);
+        logger.error('SUUMO詳細ページ解析エラー:', err);
         return [];
       }
     }

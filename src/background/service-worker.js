@@ -69,31 +69,15 @@ chrome.tabs.onRemoved.addListener((tabId) => {
  */
 async function handleReport(data) {
   try {
-    // storage.localからAPI URLを取得（設定画面で変更可能にする想定）
-    const settings = await chrome.storage.local.get({ reportApiUrl: REPORT_API_URL });
-    const apiUrl = settings.reportApiUrl;
-
-    if (apiUrl.includes('your-server.example.com')) {
-      // ローカルにだけ保存（サーバー未設定時）
-      await saveReportLocally(data);
-      return { ok: true, local: true };
-    }
-
-    const response = await fetch(apiUrl, {
+    const response = await fetch(REPORT_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    // ローカルにも保存
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     await saveReportLocally(data);
     return { ok: true };
   } catch (err) {
-    // サーバー送信失敗でもローカルには保存
     await saveReportLocally(data);
     return { ok: true, local: true, serverError: err.message };
   }
@@ -117,14 +101,7 @@ async function saveReportLocally(data) {
  */
 async function fetchReportCounts(urls) {
   try {
-    const settings = await chrome.storage.local.get({ reportApiUrl: REPORT_API_URL });
-    const apiUrl = settings.reportApiUrl;
-
-    if (apiUrl.includes('your-server.example.com')) {
-      return { ok: true, counts: {} };
-    }
-
-    const response = await fetch(`${apiUrl}/counts`, {
+    const response = await fetch(`${REPORT_API_URL}/counts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ urls })

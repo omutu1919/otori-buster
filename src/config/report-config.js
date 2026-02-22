@@ -43,10 +43,10 @@ window.__otoriBuster.REPORT_CONFIG = Object.freeze({
 
   // サイト別問い合わせリンク
   siteLinks: Object.freeze({
-    suumo: { label: 'SUUMO', url: 'https://suumo.jp/edit/toi/' },
-    homes: { label: "HOME'S", url: 'https://www.homes.co.jp/info/contact/' },
-    athome: { label: 'at home', url: 'https://www.athome.co.jp/contents/contact/' },
-    chintai: { label: 'CHINTAI', url: 'https://www.chintai.net/info/contact/' },
-    yahoo: { label: 'Yahoo!不動産', url: 'https://support.yahoo-net.jp/' }
+    suumo: { label: 'SUUMO', url: 'https://help.suumo.jp/s/seiyakuzumi' },
+    homes: { label: "HOME'S", url: 'https://lifull.my.salesforce-sites.com/jss110FormEnd?inquiryType=1' },
+    athome: { label: 'at home', url: 'https://www.athome.co.jp/qa/inquire.php' },
+    chintai: { label: 'CHINTAI', url: 'https://www.chintai.net/sogotoiawase/' },
+    yahoo: { label: 'Yahoo!不動産', url: 'https://support.yahoo-net.jp/SccRealestate/s/article/H000007528' }
   })
 });

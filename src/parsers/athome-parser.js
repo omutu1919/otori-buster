@@ -12,23 +12,10 @@ window.__otoriBuster = window.__otoriBuster || {};
 window.__otoriBuster.athomeParser = (() => {
   'use strict';
 
-  const { parserUtils } = window.__otoriBuster;
-  const { safeText, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes, normalizeDigits } = parserUtils;
+  const { parserUtils, logger } = window.__otoriBuster;
+  const { safeText, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes, normalizeDigits, extractCompany } = parserUtils;
 
   const SITE_NAME = 'athome';
-
-  function extractCompany(container) {
-    const ths = container.querySelectorAll('th, dt');
-    for (const th of ths) {
-      if (th.textContent.trim().match(/取扱|会社|不動産/)) {
-        const next = th.nextElementSibling;
-        if (next) return next.textContent.trim().slice(0, 100);
-      }
-    }
-    const el = container.querySelector('[class*="company"], [class*="agency"], [class*="shop"]');
-    if (el) return el.textContent.trim().slice(0, 100);
-    return '';
-  }
 
   function canParse() {
     return location.hostname.endsWith('athome.co.jp') && location.pathname.includes('/chintai/');
@@ -125,7 +112,7 @@ window.__otoriBuster.athomeParser = (() => {
           element: card
         });
       } catch (err) {
-        console.error('[おとり物件バスター] at home解析エラー:', err);
+        logger.error('at home解析エラー:', err);
       }
     });
 
@@ -169,7 +156,7 @@ window.__otoriBuster.athomeParser = (() => {
   function parse() {
     if (isDetailPage()) {
       try { return parseDetailPage(); }
-      catch (err) { console.error('[おとり物件バスター] at home詳細エラー:', err); return []; }
+      catch (err) { logger.error('at home詳細エラー:', err); return []; }
     }
     return parseListPage();
   }

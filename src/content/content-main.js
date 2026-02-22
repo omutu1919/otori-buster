@@ -12,6 +12,8 @@
     return;
   }
 
+  const CHECK_INTERVAL_MS = 3000;
+
   const PARSERS = [
     ns.suumoParser,
     ns.homesParser,
@@ -27,6 +29,31 @@
   let prefetchRunning = false;
   let currentSiteName = '';
   const latestScores = new Map();
+  let intervalId = null;
+
+  /**
+   * 拡張コンテキストが有効かチェック
+   * 拡張が再読み込みされると無効になる
+   */
+  function isContextValid() {
+    try {
+      return !!chrome.runtime && !!chrome.runtime.id;
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  /**
+   * コンテキスト無効時にすべての処理を停止
+   */
+  function shutdown() {
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+    pendingPrefetch.length = 0;
+    ns.logger.log('コンテキスト無効のため停止');
+  }
 
   function detectParser() {
     for (const parser of PARSERS) {
@@ -40,13 +67,15 @@
    * 既にバッジがある要素はスキップする（差分更新）
    */
   function run() {
+    if (!isContextValid()) { shutdown(); return; }
+
     const parser = detectParser();
     if (!parser) return;
 
     const properties = parser.parse();
     if (properties.length === 0) return;
 
-    console.log(`[おとり物件バスター] ${parser.name}: ${properties.length}件検出`);
+    ns.logger.log(`${parser.name}: ${properties.length}件検出`);
 
     let newCount = 0;
     const allScores = new Map();
@@ -64,7 +93,7 @@
           propertyCache.set(property.element, property);
         }
       } catch (err) {
-        console.error('[おとり物件バスター] スコアリングエラー:', err);
+        ns.logger.error('スコアリングエラー:', err);
       }
     });
 
@@ -79,7 +108,7 @@
     });
 
     if (newCount > 0) {
-      console.log(`[おとり物件バスター] ${newCount}件にバッジ追加`);
+      ns.logger.log(`${newCount}件にバッジ追加`);
     }
 
     // 結果をstorage.localに保存（popup用）
@@ -112,8 +141,10 @@
     if (urlToElement.size === 0) return;
 
     const urls = [...urlToElement.keys()];
+    if (!isContextValid()) { shutdown(); return; }
     chrome.runtime.sendMessage({ type: 'FETCH_REPORT_COUNTS', urls }, (response) => {
       if (chrome.runtime.lastError || !response || !response.ok) return;
+      if (!isContextValid()) return;
 
       const counts = response.counts || {};
       let updated = 0;
@@ -136,7 +167,7 @@
 
       if (updated > 0) {
         saveSummary(currentSiteName, latestScores);
-        console.log(`[おとり物件バスター] ${updated}件に通報件数を反映`);
+        ns.logger.log(`${updated}件に通報件数を反映`);
       }
     });
   }
@@ -159,7 +190,7 @@
 
     if (prefetchRunning || pendingPrefetch.length === 0) return;
 
-    console.log(`[おとり物件バスター] ${pendingPrefetch.length}件の写真枚数をプリフェッチ開始`);
+    ns.logger.log(`${pendingPrefetch.length}件の写真枚数をプリフェッチ開始`);
     runPrefetch();
   }
 
@@ -171,13 +202,15 @@
     prefetchRunning = true;
 
     while (pendingPrefetch.length > 0) {
+      if (!isContextValid()) { shutdown(); prefetchRunning = false; return; }
       const items = pendingPrefetch.splice(0);
       await ns.photoPrefetch.prefetchAll(items, onPrefetchResult);
     }
 
     // 全件完了後にstorage更新（ポップアップの集計を正確に）
+    if (!isContextValid()) { prefetchRunning = false; return; }
     saveSummary(currentSiteName, latestScores);
-    console.log('[おとり物件バスター] プリフェッチ完了、storage更新');
+    ns.logger.log('プリフェッチ完了、storage更新');
 
     prefetchRunning = false;
   }
@@ -197,13 +230,15 @@
     latestScores.set(element, newScore);
 
     ns.overlay.update(element, newScore, updatedProperty);
-    console.log(`[おとり物件バスター] プリフェッチ更新: 写真${photoCount}枚 → スコア${newScore.total}(${newScore.level})`);
+    ns.logger.log(`プリフェッチ更新: 写真${photoCount}枚 → スコア${newScore.total}(${newScore.level})`);
   }
 
   /**
    * 結果をストレージに保存
    */
   function saveSummary(siteName, elementScores) {
+    if (!isContextValid()) { shutdown(); return; }
+
     const summary = {
       site: siteName,
       total: elementScores.size,
@@ -217,16 +252,10 @@
       summary[score.level]++;
     });
 
-    try {
-      chrome.storage.local.set({ scanResult: summary }, () => {
-        if (chrome.runtime.lastError) {
-          console.error('[おとり物件バスター] storage保存エラー:', chrome.runtime.lastError);
-        }
-      });
-      chrome.runtime.sendMessage({ type: 'SCAN_RESULT', data: summary }).catch(() => {});
-    } catch (err) {
-      console.error('[おとり物件バスター] saveSummary例外:', err);
-    }
+    chrome.storage.local.set({ scanResult: summary }, () => {
+      if (chrome.runtime.lastError) return;
+    });
+    chrome.runtime.sendMessage({ type: 'SCAN_RESULT', data: summary }).catch(() => {});
   }
 
   /**
@@ -241,9 +270,9 @@
 
       // 新しい物件カードの追加を定期チェック（無限スクロール対応）
       // MutationObserverは自分のDOM変更で無限ループするためsetIntervalを使用
-      setInterval(() => {
+      intervalId = setInterval(() => {
         run();
-      }, 3000);
+      }, CHECK_INTERVAL_MS);
     });
   }
 

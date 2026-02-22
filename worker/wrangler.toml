@@ -1,0 +1,6 @@
+name = "otori-report-proxy"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+BACKEND_URL = "https://ai-kakudai.com"

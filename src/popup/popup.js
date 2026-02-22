@@ -20,12 +20,32 @@
       a.target = '_blank';
       a.rel = 'noopener';
       a.className = 'popup__report-link';
-      a.innerHTML = `<span class="popup__report-link-icon">${link.icon || ''}</span>`
-        + `<span class="popup__report-link-body">`
-        + `<span class="popup__report-link-label">${link.label}</span>`
-        + `<span class="popup__report-link-desc">${link.description || ''}</span>`
-        + `</span>`
-        + `<span class="popup__report-link-arrow">&#8250;</span>`;
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'popup__report-link-icon';
+      iconSpan.textContent = link.icon || '';
+
+      const bodySpan = document.createElement('span');
+      bodySpan.className = 'popup__report-link-body';
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'popup__report-link-label';
+      labelSpan.textContent = link.label;
+
+      const descSpan = document.createElement('span');
+      descSpan.className = 'popup__report-link-desc';
+      descSpan.textContent = link.description || '';
+
+      bodySpan.appendChild(labelSpan);
+      bodySpan.appendChild(descSpan);
+
+      const arrowSpan = document.createElement('span');
+      arrowSpan.className = 'popup__report-link-arrow';
+      arrowSpan.textContent = '\u203A';
+
+      a.appendChild(iconSpan);
+      a.appendChild(bodySpan);
+      a.appendChild(arrowSpan);
       officialLinksEl.appendChild(a);
     });
 
@@ -66,9 +86,22 @@
       a.rel = 'noopener';
       a.className = 'popup__ad-banner';
       a.style.background = `linear-gradient(135deg, ${link.color}, ${link.color}dd)`;
-      a.innerHTML = `<span class="popup__ad-banner-title">${link.title}</span>`
-        + `<span class="popup__ad-banner-sub">${link.sub}</span>`
-        + `<span class="popup__ad-banner-arrow">&#8250;</span>`;
+
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'popup__ad-banner-title';
+      titleSpan.textContent = link.title;
+
+      const subSpan = document.createElement('span');
+      subSpan.className = 'popup__ad-banner-sub';
+      subSpan.textContent = link.sub;
+
+      const arrowSpan = document.createElement('span');
+      arrowSpan.className = 'popup__ad-banner-arrow';
+      arrowSpan.textContent = '\u203A';
+
+      a.appendChild(titleSpan);
+      a.appendChild(subSpan);
+      a.appendChild(arrowSpan);
       adsSection.appendChild(a);
     });
   }
