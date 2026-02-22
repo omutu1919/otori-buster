@@ -93,10 +93,16 @@
     });
 
     try {
-      chrome.storage.local.set({ scanResult: summary });
+      chrome.storage.local.set({ scanResult: summary }, () => {
+        if (chrome.runtime.lastError) {
+          console.error('[おとり物件バスター] storage保存エラー:', chrome.runtime.lastError);
+        } else {
+          console.log('[おとり物件バスター] storage保存OK:', summary);
+        }
+      });
       chrome.runtime.sendMessage({ type: 'SCAN_RESULT', data: summary }).catch(() => {});
     } catch (err) {
-      // 無視
+      console.error('[おとり物件バスター] saveSummary例外:', err);
     }
   }
 

@@ -9,10 +9,10 @@ window.__otoriBuster.overlay = (() => {
   'use strict';
 
   const COLORS = Object.freeze({
-    safe:    { bg: '#e8f5e9', border: '#4caf50', text: '#2e7d32', badge: '#4caf50' },
-    caution: { bg: '#fff8e1', border: '#ffc107', text: '#f57f17', badge: '#ffc107' },
-    warning: { bg: '#fff3e0', border: '#ff9800', text: '#e65100', badge: '#ff9800' },
-    danger:  { bg: '#ffebee', border: '#f44336', text: '#c62828', badge: '#f44336' }
+    safe:    { badge: '#4caf50' },
+    caution: { badge: '#ffc107' },
+    warning: { badge: '#ff9800' },
+    danger:  { badge: '#f44336' }
   });
 
   const LEVEL_LABELS = Object.freeze({
@@ -22,18 +22,8 @@ window.__otoriBuster.overlay = (() => {
     danger: '危険'
   });
 
-  // 現在開いているパネル（1つだけ開く制御用）
-  let openPanel = null;
-
-  // グローバルクリックハンドラ（1回だけ登録）
-  document.addEventListener('click', (e) => {
-    // otori-buster-host 内のクリックは無視
-    if (e.target.closest && e.target.closest('.otori-buster-host')) return;
-    if (openPanel) {
-      openPanel.classList.remove('otori-panel--open');
-      openPanel = null;
-    }
-  }, true);
+  // 全ホスト要素を追跡（他パネルを閉じる用）
+  const allHosts = [];
 
   function getShadowCSS() {
     return `
@@ -60,6 +50,7 @@ window.__otoriBuster.overlay = (() => {
         box-shadow: 0 2px 6px rgba(0,0,0,0.15);
         transition: transform 0.15s ease, box-shadow 0.15s ease;
         user-select: none;
+        color: #fff;
       }
 
       .otori-badge:hover {
@@ -67,14 +58,8 @@ window.__otoriBuster.overlay = (() => {
         box-shadow: 0 3px 10px rgba(0,0,0,0.2);
       }
 
-      .otori-badge__score {
-        font-size: 14px;
-        font-weight: 800;
-      }
-
-      .otori-badge__label {
-        font-size: 11px;
-      }
+      .otori-badge__score { font-size: 14px; font-weight: 800; }
+      .otori-badge__label { font-size: 11px; }
 
       .otori-panel {
         display: none;
@@ -89,7 +74,7 @@ window.__otoriBuster.overlay = (() => {
         background: #fff;
       }
 
-      .otori-panel--open {
+      :host([data-open]) .otori-panel {
         display: block;
       }
 
@@ -114,21 +99,12 @@ window.__otoriBuster.overlay = (() => {
         opacity: 0.8;
       }
 
-      .otori-panel__close:hover {
-        opacity: 1;
-      }
+      .otori-panel__close:hover { opacity: 1; }
 
-      .otori-panel__body {
-        padding: 12px 16px;
-      }
+      .otori-panel__body { padding: 12px 16px; }
 
-      .otori-factor {
-        margin-bottom: 10px;
-      }
-
-      .otori-factor:last-child {
-        margin-bottom: 0;
-      }
+      .otori-factor { margin-bottom: 10px; }
+      .otori-factor:last-child { margin-bottom: 0; }
 
       .otori-factor__header {
         display: flex;
@@ -137,17 +113,8 @@ window.__otoriBuster.overlay = (() => {
         margin-bottom: 4px;
       }
 
-      .otori-factor__name {
-        font-size: 12px;
-        font-weight: 600;
-        color: #333;
-      }
-
-      .otori-factor__score {
-        font-size: 11px;
-        font-weight: 700;
-        color: #666;
-      }
+      .otori-factor__name { font-size: 12px; font-weight: 600; color: #333; }
+      .otori-factor__score { font-size: 11px; font-weight: 700; color: #666; }
 
       .otori-factor__bar {
         height: 6px;
@@ -162,11 +129,7 @@ window.__otoriBuster.overlay = (() => {
         transition: width 0.3s ease;
       }
 
-      .otori-factor__reason {
-        font-size: 11px;
-        color: #888;
-        margin-top: 3px;
-      }
+      .otori-factor__reason { font-size: 11px; color: #888; margin-top: 3px; }
 
       .otori-panel__footer {
         padding: 10px 16px;
@@ -176,58 +139,6 @@ window.__otoriBuster.overlay = (() => {
         text-align: center;
       }
     `;
-  }
-
-  function createBadge(score) {
-    const colors = COLORS[score.level];
-    const badge = document.createElement('div');
-    badge.className = 'otori-badge';
-    badge.style.cssText = `background: ${colors.badge}; color: #fff;`;
-    badge.innerHTML = `
-      <span class="otori-badge__score">${score.total}</span>
-      <span class="otori-badge__label">${LEVEL_LABELS[score.level]}</span>
-    `;
-    return badge;
-  }
-
-  function createPanel(score) {
-    const colors = COLORS[score.level];
-    const panel = document.createElement('div');
-    panel.className = 'otori-panel';
-
-    const factorsHTML = score.factors.map(f => {
-      const barColor = f.rawScore >= 70 ? COLORS.danger.badge :
-                       f.rawScore >= 45 ? COLORS.warning.badge :
-                       f.rawScore >= 20 ? COLORS.caution.badge :
-                       COLORS.safe.badge;
-      return `
-        <div class="otori-factor">
-          <div class="otori-factor__header">
-            <span class="otori-factor__name">${f.name}</span>
-            <span class="otori-factor__score">${f.rawScore}/100 (x${f.weight})</span>
-          </div>
-          <div class="otori-factor__bar">
-            <div class="otori-factor__fill" style="width: ${f.rawScore}%; background: ${barColor};"></div>
-          </div>
-          <div class="otori-factor__reason">${f.reason}</div>
-        </div>
-      `;
-    }).join('');
-
-    panel.innerHTML = `
-      <div class="otori-panel__header" style="background: ${colors.badge};">
-        <span>おとりスコア: ${score.total}/100 (${LEVEL_LABELS[score.level]})</span>
-        <button class="otori-panel__close" aria-label="閉じる">&times;</button>
-      </div>
-      <div class="otori-panel__body">
-        ${factorsHTML}
-      </div>
-      <div class="otori-panel__footer">
-        おとり物件バスター - スコアは参考値です
-      </div>
-    `;
-
-    return panel;
   }
 
   /**
@@ -241,6 +152,8 @@ window.__otoriBuster.overlay = (() => {
       element.style.position = 'relative';
     }
 
+    const colors = COLORS[score.level];
+
     const host = document.createElement('div');
     host.className = 'otori-buster-host';
     const shadow = host.attachShadow({ mode: 'open' });
@@ -249,39 +162,82 @@ window.__otoriBuster.overlay = (() => {
     style.textContent = getShadowCSS();
     shadow.appendChild(style);
 
-    const badge = createBadge(score);
+    // バッジ
+    const badge = document.createElement('div');
+    badge.className = 'otori-badge';
+    badge.style.background = colors.badge;
+    badge.innerHTML = `<span class="otori-badge__score">${score.total}</span><span class="otori-badge__label">${LEVEL_LABELS[score.level]}</span>`;
     shadow.appendChild(badge);
 
-    const panel = createPanel(score);
+    // パネル
+    const panel = document.createElement('div');
+    panel.className = 'otori-panel';
+
+    const factorsHTML = score.factors.map(f => {
+      const barColor = f.rawScore >= 70 ? '#f44336' : f.rawScore >= 45 ? '#ff9800' : f.rawScore >= 20 ? '#ffc107' : '#4caf50';
+      return `<div class="otori-factor">
+        <div class="otori-factor__header">
+          <span class="otori-factor__name">${f.name}</span>
+          <span class="otori-factor__score">${f.rawScore}/100 (x${f.weight})</span>
+        </div>
+        <div class="otori-factor__bar">
+          <div class="otori-factor__fill" style="width:${f.rawScore}%;background:${barColor}"></div>
+        </div>
+        <div class="otori-factor__reason">${f.reason}</div>
+      </div>`;
+    }).join('');
+
+    panel.innerHTML = `
+      <div class="otori-panel__header" style="background:${colors.badge}">
+        <span>おとりスコア: ${score.total}/100 (${LEVEL_LABELS[score.level]})</span>
+        <button class="otori-panel__close" aria-label="閉じる">&times;</button>
+      </div>
+      <div class="otori-panel__body">${factorsHTML}</div>
+      <div class="otori-panel__footer">おとり物件バスター - スコアは参考値です</div>
+    `;
     shadow.appendChild(panel);
 
-    // バッジクリック: ホスト要素のonclickで処理（リターゲット問題回避）
-    host.addEventListener('click', (e) => {
+    // === イベント処理 ===
+    // パネル開閉をdata属性で制御（CSSの :host([data-open]) で表示切替）
+    // clickイベント伝播の問題を完全に回避するためmousedownを使用
+
+    badge.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       e.preventDefault();
 
-      const isOpen = panel.classList.contains('otori-panel--open');
+      const isOpen = host.hasAttribute('data-open');
 
-      // 現在開いてるパネルを閉じる
-      if (openPanel && openPanel !== panel) {
-        openPanel.classList.remove('otori-panel--open');
-      }
+      // 他のパネルを全部閉じる
+      allHosts.forEach(h => {
+        if (h !== host) h.removeAttribute('data-open');
+      });
 
       if (isOpen) {
-        panel.classList.remove('otori-panel--open');
-        openPanel = null;
+        host.removeAttribute('data-open');
       } else {
-        panel.classList.add('otori-panel--open');
-        openPanel = panel;
+        host.setAttribute('data-open', '');
       }
     });
 
+    // 閉じるボタン
+    panel.querySelector('.otori-panel__close').addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      host.removeAttribute('data-open');
+    });
+
+    // パネル内のクリック/マウスイベントが外に漏れないようにする
+    panel.addEventListener('mousedown', (e) => { e.stopPropagation(); });
+    panel.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); });
+    host.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); });
+
     element.appendChild(host);
+    allHosts.push(host);
   }
 
   function removeAll() {
     document.querySelectorAll('.otori-buster-host').forEach(el => el.remove());
-    openPanel = null;
+    allHosts.length = 0;
   }
 
   return Object.freeze({ attach, removeAll });
