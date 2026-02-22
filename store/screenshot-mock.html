@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>おとり物件バスター - スクリーンショット用モック</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Hiragino Sans', 'Noto Sans JP', 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .container {
+      width: 1280px;
+      height: 800px;
+      overflow: hidden;
+      position: relative;
+      background: #f0f2f5;
+    }
+
+    /* 偽のブラウザバー */
+    .browser-bar {
+      height: 40px;
+      background: #dee1e6;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+    }
+    .browser-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .browser-dot--red { background: #ff5f57; }
+    .browser-dot--yellow { background: #febc2e; }
+    .browser-dot--green { background: #28c840; }
+    .browser-url {
+      flex: 1;
+      margin-left: 12px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 6px 16px;
+      font-size: 13px;
+      color: #555;
+    }
+
+    /* 物件カード模擬 */
+    .property-list {
+      padding: 20px 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .property-card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: flex;
+      padding: 16px;
+      gap: 16px;
+      position: relative;
+    }
+
+    .property-image {
+      width: 200px;
+      height: 140px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      color: #fff;
+    }
+
+    .property-info {
+      flex: 1;
+    }
+
+    .property-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a237e;
+      margin-bottom: 6px;
+    }
+
+    .property-rent {
+      font-size: 22px;
+      font-weight: 700;
+      color: #c62828;
+      margin-bottom: 4px;
+    }
+
+    .property-rent small {
+      font-size: 13px;
+      color: #888;
+      font-weight: 400;
+    }
+
+    .property-detail {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 2px;
+    }
+
+    .property-company {
+      font-size: 12px;
+      color: #999;
+      margin-top: 8px;
+    }
+
+    /* おとりスコアバッジ */
+    .otori-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .otori-badge--danger { background: #f44336; }
+    .otori-badge--warning { background: #ff9800; }
+    .otori-badge--caution { background: #ffc107; color: #333; }
+    .otori-badge--safe { background: #4caf50; }
+
+    .otori-badge__score {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    /* 詳細パネル（展開例） */
+    .otori-panel {
+      position: absolute;
+      top: 60px;
+      right: 12px;
+      width: 260px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      padding: 14px;
+      z-index: 10;
+    }
+
+    .otori-panel__title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #c62828;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #f44336;
+    }
+
+    .otori-panel__factor {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      font-size: 12px;
+    }
+
+    .otori-panel__factor-bar {
+      width: 60px;
+      height: 6px;
+      background: #eee;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .otori-panel__factor-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    .fill--high { background: #f44336; }
+    .fill--mid { background: #ff9800; }
+    .fill--low { background: #4caf50; }
+
+    /* ヘッダー説明オーバーレイ */
+    .hero-overlay {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(26, 35, 126, 0.95);
+      color: #fff;
+      padding: 20px 40px;
+      border-radius: 12px;
+      text-align: center;
+      z-index: 20;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+
+    .hero-overlay__title {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .hero-overlay__sub {
+      font-size: 15px;
+      opacity: 0.9;
+    }
+
+    /* 矢印アノテーション */
+    .annotation {
+      position: absolute;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1a237e;
+      background: #e8eaf6;
+      padding: 6px 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      white-space: nowrap;
+    }
+
+    .annotation::before {
+      content: "";
+      position: absolute;
+      width: 0;
+      height: 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Screenshot 1: メイン機能紹介 -->
+  <div class="container" id="screenshot1">
+    <div class="browser-bar">
+      <span class="browser-dot browser-dot--red"></span>
+      <span class="browser-dot browser-dot--yellow"></span>
+      <span class="browser-dot browser-dot--green"></span>
+      <span class="browser-url">https://suumo.jp/chintai/tokyo/sc_shinjuku/</span>
+    </div>
+
+    <div class="hero-overlay">
+      <div class="hero-overlay__title">おとり物件バスター</div>
+      <div class="hero-overlay__sub">不動産サイトの物件をリアルタイム分析。おとり物件の可能性をスコア表示。</div>
+    </div>
+
+    <div class="property-list" style="margin-top: 10px;">
+      <!-- 物件1: 危険 -->
+      <div class="property-card">
+        <div class="property-image" style="background: linear-gradient(135deg, #e0e0e0, #bdbdbd);">🏠</div>
+        <div class="property-info">
+          <div class="property-name" style="color: #999; font-style: italic;">（物件名なし）</div>
+          <div class="property-rent">3.2万円 <small>/ 管理費 3,000円</small></div>
+          <div class="property-detail">新宿区 ○○町 | 1K | 25.3m²</div>
+          <div class="property-detail">JR山手線 新宿駅 徒歩8分</div>
+          <div class="property-company">株式会社 ○○不動産</div>
+        </div>
+        <div class="otori-badge otori-badge--danger">
+          <span class="otori-badge__score">82</span>
+          <span>おとり危険</span>
+        </div>
+
+        <!-- 詳細パネル -->
+        <div class="otori-panel">
+          <div class="otori-panel__title">おとりスコア: 82/100</div>
+          <div class="otori-panel__factor">
+            <span>相場との乖離</span>
+            <div class="otori-panel__factor-bar">
+              <div class="otori-panel__factor-fill fill--high" style="width: 90%;"></div>
+            </div>
+            <span style="color: #f44336;">90</span>
+          </div>
+          <div class="otori-panel__factor">
+            <span>住所の曖昧さ</span>
+            <div class="otori-panel__factor-bar">
+              <div class="otori-panel__factor-fill fill--mid" style="width: 60%;"></div>
+            </div>
+            <span style="color: #ff9800;">60</span>
+          </div>
+          <div class="otori-panel__factor">
+            <span>物件名の有無</span>
+            <div class="otori-panel__factor-bar">
+              <div class="otori-panel__factor-fill fill--high" style="width: 100%;"></div>
+            </div>
+            <span style="color: #f44336;">100</span>
+          </div>
+          <div class="otori-panel__factor">
+            <span>写真の枚数</span>
+            <div class="otori-panel__factor-bar">
+              <div class="otori-panel__factor-fill fill--mid" style="width: 70%;"></div>
+            </div>
+            <span style="color: #ff9800;">70</span>
+          </div>
+          <div class="otori-panel__factor">
+            <span>極端な低価格</span>
+            <div class="otori-panel__factor-bar">
+              <div class="otori-panel__factor-fill fill--high" style="width: 100%;"></div>
+            </div>
+            <span style="color: #f44336;">100</span>
+          </div>
+          <div class="otori-panel__factor">
+            <span>通報件数</span>
+            <div class="otori-panel__factor-bar">
+              <div class="otori-panel__factor-fill fill--mid" style="width: 40%;"></div>
+            </div>
+            <span style="color: #ff9800;">40</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 物件2: 警告 -->
+      <div class="property-card">
+        <div class="property-image" style="background: linear-gradient(135deg, #bbdefb, #90caf9);">🏢</div>
+        <div class="property-info">
+          <div class="property-name">グランメゾン新宿</div>
+          <div class="property-rent">5.8万円 <small>/ 管理費 5,000円</small></div>
+          <div class="property-detail">新宿区 ○○ | 1K | 22.1m²</div>
+          <div class="property-detail">東京メトロ丸ノ内線 新宿御苑前駅 徒歩5分</div>
+          <div class="property-company">○○ハウジング</div>
+        </div>
+        <div class="otori-badge otori-badge--warning">
+          <span class="otori-badge__score">52</span>
+          <span>要注意</span>
+        </div>
+      </div>
+
+      <!-- 物件3: 安全 -->
+      <div class="property-card">
+        <div class="property-image" style="background: linear-gradient(135deg, #c8e6c9, #a5d6a7);">🏢</div>
+        <div class="property-info">
+          <div class="property-name">レジデンス西新宿</div>
+          <div class="property-rent">8.5万円 <small>/ 管理費 8,000円</small></div>
+          <div class="property-detail">新宿区西新宿1-2-3 | 1K | 28.5m²</div>
+          <div class="property-detail">JR山手線 新宿駅 徒歩12分</div>
+          <div class="property-company">△△不動産株式会社</div>
+        </div>
+        <div class="otori-badge otori-badge--safe">
+          <span class="otori-badge__score">12</span>
+          <span>安全</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr style="margin: 40px 0; border: 2px dashed #ccc;">
+
+  <!-- Screenshot 2: ポップアップ -->
+  <div style="width: 1280px; height: 800px; background: #f0f2f5; display: flex; align-items: center; justify-content: center; position: relative;" id="screenshot2">
+    <div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); text-align: center;">
+      <div style="font-size: 32px; font-weight: 800; color: #1a237e; margin-bottom: 8px;">ポップアップで一目瞭然</div>
+      <div style="font-size: 16px; color: #666;">解析結果の概要をすぐに確認できます</div>
+    </div>
+
+    <!-- ポップアップ模擬 -->
+    <div style="width: 320px; background: #fafafa; border-radius: 12px; box-shadow: 0 8px 40px rgba(0,0,0,0.2); overflow: hidden;">
+      <div style="padding: 16px; background: linear-gradient(135deg, #1a237e, #283593); color: #fff; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 16px; font-weight: 700;">おとり物件バスター</span>
+        <span style="background: #4caf50; width: 36px; height: 20px; border-radius: 20px; display: inline-block; position: relative;">
+          <span style="position: absolute; right: 2px; top: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%;"></span>
+        </span>
+      </div>
+      <div style="padding: 16px; background: #fff; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #eee;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: #f44336; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; font-weight: 700;">3</div>
+        <div style="font-size: 13px; color: #666;">SUUMO: 3件の危険な物件を検出</div>
+      </div>
+      <div style="padding: 12px 16px; background: #fff; border-bottom: 1px solid #eee;">
+        <div style="display: flex; justify-content: space-between; padding: 6px 0;"><span style="color: #555; font-size: 13px;">解析物件数</span><span style="font-weight: 700;">24</span></div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid #f5f5f5;"><span style="color: #c62828; font-size: 13px;">危険</span><span style="font-weight: 700; color: #f44336;">3</span></div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid #f5f5f5;"><span style="color: #e65100; font-size: 13px;">警告</span><span style="font-weight: 700; color: #ff9800;">5</span></div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid #f5f5f5;"><span style="color: #f57f17; font-size: 13px;">注意</span><span style="font-weight: 700; color: #ffc107;">4</span></div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid #f5f5f5;"><span style="color: #2e7d32; font-size: 13px;">安全</span><span style="font-weight: 700; color: #4caf50;">12</span></div>
+      </div>
+      <div style="padding: 12px 16px; text-align: center;">
+        <p style="font-size: 11px; color: #999;">対応: SUUMO, HOME'S, at home, CHINTAI, Yahoo!不動産</p>
+        <p style="font-size: 10px; color: #ccc; margin-top: 4px;">v1.0.0</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
