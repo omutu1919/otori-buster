@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup">
+    <header class="popup__header">
+      <h1 class="popup__title">おとり物件バスター</h1>
+      <label class="popup__toggle">
+        <input type="checkbox" id="toggleEnabled" checked>
+        <span class="popup__toggle-slider"></span>
+      </label>
+    </header>
+
+    <section class="popup__status" id="statusSection">
+      <div class="popup__status-icon" id="statusIcon">--</div>
+      <div class="popup__status-text" id="statusText">ページを解析中...</div>
+    </section>
+
+    <section class="popup__summary" id="summarySection" style="display:none;">
+      <div class="popup__summary-row">
+        <span class="popup__label">解析物件数</span>
+        <span class="popup__value" id="totalCount">0</span>
+      </div>
+      <div class="popup__summary-row popup__summary-row--danger">
+        <span class="popup__label">危険</span>
+        <span class="popup__value" id="dangerCount">0</span>
+      </div>
+      <div class="popup__summary-row popup__summary-row--warning">
+        <span class="popup__label">警告</span>
+        <span class="popup__value" id="warningCount">0</span>
+      </div>
+      <div class="popup__summary-row popup__summary-row--caution">
+        <span class="popup__label">注意</span>
+        <span class="popup__value" id="cautionCount">0</span>
+      </div>
+      <div class="popup__summary-row popup__summary-row--safe">
+        <span class="popup__label">安全</span>
+        <span class="popup__value" id="safeCount">0</span>
+      </div>
+    </section>
+
+    <section class="popup__info">
+      <p>対応サイト: SUUMO, HOME'S, at home, CHINTAI, Yahoo!不動産</p>
+      <p class="popup__version">v1.0.0</p>
+    </section>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

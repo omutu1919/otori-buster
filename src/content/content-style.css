@@ -1,0 +1,18 @@
+/*
+ * おとり物件バスター - ホスト側フォールバックCSS
+ * Shadow DOM内にスタイルは隔離されるが、ホスト要素の最低限のスタイルをここで定義
+ */
+
+.otori-buster-host {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 9999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1;
+}
+
+/* 物件カードにrelative位置を付与（まだない場合） */
+.otori-buster-positioned {
+  position: relative !important;
+}
