@@ -6,7 +6,7 @@ window.__otoriBuster = window.__otoriBuster || {};
 
 window.__otoriBuster.REPORT_CONFIG = Object.freeze({
   // 通報APIエンドポイント（自前サーバーのURLに変更すること）
-  API_URL: 'https://your-server.example.com/api/otori-report',
+  API_URL: 'https://tsumocchi.com/api/otori-report',
 
   // 通報理由の選択肢
   reasons: Object.freeze([

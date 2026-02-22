@@ -4,7 +4,7 @@
  */
 
 // 通報APIのデフォルトURL（report-config.jsはcontent scriptのみで読み込まれるため、ここにも定義）
-const REPORT_API_URL = 'https://your-server.example.com/api/otori-report';
+const REPORT_API_URL = 'https://tsumocchi.com/api/otori-report';
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'SCAN_RESULT') {
