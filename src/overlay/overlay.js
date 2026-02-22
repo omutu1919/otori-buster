@@ -154,28 +154,59 @@ window.__otoriBuster.overlay = (() => {
       }
 
       .otori-panel__ad {
-        display: block;
-        margin-top: 8px;
-        padding: 8px 12px;
-        background: linear-gradient(135deg, #FF9900, #FFB84D);
-        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        padding: 12px 14px;
+        border-radius: 8px;
         color: #fff;
         text-decoration: none;
-        font-size: 11px;
-        font-weight: 700;
-        text-align: center;
-        transition: opacity 0.2s;
+        transition: opacity 0.2s, transform 0.15s;
       }
 
       .otori-panel__ad:hover {
+        opacity: 0.88;
+        transform: scale(1.02);
+      }
+
+      .otori-panel__ad-icon {
+        font-size: 22px;
+        flex-shrink: 0;
+      }
+
+      .otori-panel__ad-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .otori-panel__ad-title {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.3;
+      }
+
+      .otori-panel__ad-sub {
+        display: block;
+        font-size: 10px;
         opacity: 0.85;
+        margin-top: 2px;
       }
 
       .otori-panel__ad-label {
         font-size: 8px;
         font-weight: 400;
-        opacity: 0.8;
-        margin-right: 4px;
+        opacity: 0.7;
+        position: absolute;
+        top: 4px;
+        right: 6px;
+      }
+
+      .otori-panel__ad-arrow {
+        font-size: 16px;
+        opacity: 0.7;
+        flex-shrink: 0;
       }
 
       .otori-panel__report-btn {
@@ -234,9 +265,19 @@ window.__otoriBuster.overlay = (() => {
 
     // アフィリエイトリンク
     const aff = window.__otoriBuster.AFFILIATE;
-    const adLink = aff ? aff.links[0] : null;
-    const adUrl = adLink ? aff.buildUrl(adLink.url) : '';
-    const adText = adLink ? adLink.title : '';
+    const adLinksHTML = aff ? aff.links.map(link => {
+      const url = escapeHtml(aff.buildUrl(link.url));
+      const bg = link.color || '#FF9900';
+      return `<a href="${url}" target="_blank" rel="noopener" class="otori-panel__ad" style="background:linear-gradient(135deg, ${bg}, ${bg}dd);position:relative;">
+        <span class="otori-panel__ad-label">PR</span>
+        <span class="otori-panel__ad-icon">${escapeHtml(link.icon || '')}</span>
+        <span class="otori-panel__ad-body">
+          <span class="otori-panel__ad-title">${escapeHtml(link.title)}</span>
+          <span class="otori-panel__ad-sub">${escapeHtml(link.sub || '')}</span>
+        </span>
+        <span class="otori-panel__ad-arrow">\u203A</span>
+      </a>`;
+    }).join('') : '';
 
     // パネル
     const panel = document.createElement('div');
@@ -262,11 +303,13 @@ window.__otoriBuster.overlay = (() => {
         <span>おとりスコア: ${escapeHtml(String(score.total))}/100 (${escapeHtml(LEVEL_LABELS[score.level] || '')})</span>
         <button class="otori-panel__close" aria-label="閉じる">&times;</button>
       </div>
-      <div class="otori-panel__body">${factorsHTML}</div>
+      <div class="otori-panel__body">
+        ${factorsHTML}
+        ${adLinksHTML}
+      </div>
       <div class="otori-panel__footer">
-        おとり物件バスター - スコアは参考値です
         <button class="otori-panel__report-btn" data-action="report">この物件を通報する</button>
-        <a href="${escapeHtml(adUrl)}" target="_blank" rel="noopener" class="otori-panel__ad"><span class="otori-panel__ad-label">PR</span>${escapeHtml(adText)}</a>
+        <div style="margin-top:6px;">おとり物件バスター - スコアは参考値です</div>
       </div>
     `;
     shadow.appendChild(panel);

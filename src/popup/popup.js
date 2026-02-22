@@ -87,6 +87,13 @@
       a.className = 'popup__ad-banner';
       a.style.background = `linear-gradient(135deg, ${link.color}, ${link.color}dd)`;
 
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'popup__ad-banner-icon';
+      iconSpan.textContent = link.icon || '';
+
+      const bodySpan = document.createElement('span');
+      bodySpan.className = 'popup__ad-banner-body';
+
       const titleSpan = document.createElement('span');
       titleSpan.className = 'popup__ad-banner-title';
       titleSpan.textContent = link.title;
@@ -95,12 +102,15 @@
       subSpan.className = 'popup__ad-banner-sub';
       subSpan.textContent = link.sub;
 
+      bodySpan.appendChild(titleSpan);
+      bodySpan.appendChild(subSpan);
+
       const arrowSpan = document.createElement('span');
       arrowSpan.className = 'popup__ad-banner-arrow';
       arrowSpan.textContent = '\u203A';
 
-      a.appendChild(titleSpan);
-      a.appendChild(subSpan);
+      a.appendChild(iconSpan);
+      a.appendChild(bodySpan);
       a.appendChild(arrowSpan);
       adsSection.appendChild(a);
     });

@@ -9,16 +9,18 @@ window.__otoriBuster.AFFILIATE = Object.freeze({
   AMAZON_TAG: 'vtubertrends-22',
   links: [
     {
+      title: '引越し準備はお済みですか？',
+      sub: '新生活に必要なものをまとめてチェック',
+      url: 'https://www.amazon.co.jp/b?node=2221516051',
+      color: '#FF9900',
+      icon: '\u{1F4E6}'
+    },
+    {
       title: 'Amazon タイムセール',
       sub: '本日のお得な商品をチェック',
       url: 'https://www.amazon.co.jp/gp/goldbox',
-      color: '#FF9900'
-    },
-    {
-      title: 'Amazon 売れ筋ランキング',
-      sub: '今みんなが買っているものは？',
-      url: 'https://www.amazon.co.jp/gp/bestsellers',
-      color: '#146EB4'
+      color: '#E8530E',
+      icon: '\u{26A1}'
     }
   ],
   buildUrl(baseUrl) {
