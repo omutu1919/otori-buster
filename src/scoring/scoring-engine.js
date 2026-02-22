@@ -25,36 +25,64 @@ window.__otoriBuster.scoringEngine = (() => {
     return 'danger';
   }
 
-  /** 因子1: 相場との乖離 */
+  /**
+   * 相場を物件条件で補正
+   * 築年数が古い・駅から遠い物件は相場より安くて当然なので割り引く
+   */
+  function adjustMarketRent(baseRent, age, walkMinutes) {
+    let discount = 0;
+
+    // 築年数: 年1%減、最大30%引き（築30年超）
+    if (age > 0) {
+      discount += Math.min(age * 0.01, 0.30);
+    }
+
+    // 駅距離: 徒歩5分超から1分あたり2%減、最大20%引き
+    if (walkMinutes > 5) {
+      discount += Math.min((walkMinutes - 5) * 0.02, 0.20);
+    }
+
+    return Math.round(baseRent * (1 - discount) * 100) / 100;
+  }
+
+  /** 因子1: 相場との乖離（築年数・駅距離で補正済み） */
   function scorePriceGap(property) {
     const region = parserUtils.extractRegion(property.address);
     const ward = parserUtils.extractWard(property.address);
     const layout = parserUtils.normalizeLayout(property.layout);
-    const marketRent = marketData.getMarketRent(region, ward, layout);
+    const baseMarketRent = marketData.getMarketRent(region, ward, layout);
 
-    if (!marketRent || property.rent <= 0) {
+    if (!baseMarketRent || property.rent <= 0) {
       return { name: '相場との乖離', rawScore: 0, weight: WEIGHTS.PRICE_GAP, weightedScore: 0, reason: '相場データなし（判定スキップ）' };
     }
+
+    const age = property.age > 0 ? property.age : 0;
+    const walk = property.walkMinutes > 0 ? property.walkMinutes : 0;
+    const marketRent = adjustMarketRent(baseMarketRent, age, walk);
 
     const gap = (marketRent - property.rent) / marketRent;
     let rawScore;
     let reason;
 
+    const adjustNote = marketRent < baseMarketRent
+      ? `（築${age}年/徒歩${walk}分で${baseMarketRent}万→${marketRent}万に補正）`
+      : '';
+
     if (gap <= 0.05) {
       rawScore = 0;
-      reason = `相場(${marketRent}万)との差: ${Math.round(gap * 100)}%以内`;
+      reason = `補正相場(${marketRent}万)との差: ${Math.round(gap * 100)}%以内${adjustNote}`;
     } else if (gap <= 0.15) {
       rawScore = Math.round(30 * ((gap - 0.05) / 0.10));
-      reason = `相場(${marketRent}万)より${Math.round(gap * 100)}%安い`;
+      reason = `補正相場(${marketRent}万)より${Math.round(gap * 100)}%安い${adjustNote}`;
     } else if (gap <= 0.25) {
       rawScore = 30 + Math.round(30 * ((gap - 0.15) / 0.10));
-      reason = `相場(${marketRent}万)より${Math.round(gap * 100)}%安い（要注意）`;
+      reason = `補正相場(${marketRent}万)より${Math.round(gap * 100)}%安い（要注意）${adjustNote}`;
     } else if (gap <= 0.40) {
       rawScore = 60 + Math.round(40 * ((gap - 0.25) / 0.15));
-      reason = `相場(${marketRent}万)より${Math.round(gap * 100)}%安い（非常に怪しい）`;
+      reason = `補正相場(${marketRent}万)より${Math.round(gap * 100)}%安い（非常に怪しい）${adjustNote}`;
     } else {
       rawScore = 100;
-      reason = `相場(${marketRent}万)より${Math.round(gap * 100)}%安い（おとりの可能性大）`;
+      reason = `補正相場(${marketRent}万)より${Math.round(gap * 100)}%安い（おとりの可能性大）${adjustNote}`;
     }
 
     return { name: '相場との乖離', rawScore, weight: WEIGHTS.PRICE_GAP, weightedScore: Math.round(rawScore * WEIGHTS.PRICE_GAP), reason };

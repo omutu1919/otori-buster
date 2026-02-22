@@ -23,6 +23,7 @@
     {
       "matches": [
         "*://suumo.jp/chintai/*",
+        "*://suumo.jp/jj/chintai/*",
         "*://*.homes.co.jp/chintai/*",
         "*://*.athome.co.jp/chintai/*",
         "*://*.chintai.net/*",
@@ -39,6 +40,7 @@
         "src/parsers/chintai-parser.js",
         "src/parsers/yahoo-parser.js",
         "src/overlay/overlay.js",
+        "src/content/photo-prefetch.js",
         "src/content/content-main.js"
       ],
       "css": ["src/content/content-style.css"],

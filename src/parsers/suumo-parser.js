@@ -156,6 +156,22 @@ window.__otoriBuster.suumoParser = (() => {
     }];
   }
 
+  // === 詳細URL抽出（プリフェッチ用） ===
+
+  /**
+   * 一覧ページのカード要素から詳細ページURLを抽出
+   * SUUMOの詳細URLパターン: /chintai/jnc_XXXXXXXXX/
+   */
+  function getDetailUrl(cardElement) {
+    const links = cardElement.querySelectorAll('a[href]');
+    for (const link of links) {
+      if (/\/chintai\/[a-z]{2,3}_\d+/.test(link.href)) {
+        return link.href;
+      }
+    }
+    return '';
+  }
+
   // === メイン ===
 
   function parse() {
@@ -170,5 +186,5 @@ window.__otoriBuster.suumoParser = (() => {
     return parseListPage();
   }
 
-  return Object.freeze({ name: SITE_NAME, canParse, parse });
+  return Object.freeze({ name: SITE_NAME, canParse, parse, getDetailUrl });
 })();

@@ -235,10 +235,23 @@ window.__otoriBuster.overlay = (() => {
     allHosts.push(host);
   }
 
+  /**
+   * 既存バッジを削除して新スコアで再描画（プリフェッチ更新用）
+   */
+  function update(element, score) {
+    const existing = element.querySelector('.otori-buster-host');
+    if (existing) {
+      const idx = allHosts.indexOf(existing);
+      if (idx >= 0) allHosts.splice(idx, 1);
+      existing.remove();
+    }
+    attach(element, score);
+  }
+
   function removeAll() {
     document.querySelectorAll('.otori-buster-host').forEach(el => el.remove());
     allHosts.length = 0;
   }
 
-  return Object.freeze({ attach, removeAll });
+  return Object.freeze({ attach, update, removeAll });
 })();
