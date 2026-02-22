@@ -159,33 +159,49 @@ body {
   background: #e8e8e8;
   padding: 1px 5px;
   border-radius: 3px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   letter-spacing: 0.5px;
 }
 
-.popup__ad-link {
+.popup__ad-banner {
   display: block;
-  font-size: 12px;
-  color: #1565c0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #fff;
   text-decoration: none;
-  padding: 5px 0;
-  border-bottom: 1px solid #eee;
-  transition: color 0.2s;
+  transition: opacity 0.2s, transform 0.15s;
+  margin-bottom: 6px;
 }
 
-.popup__ad-link:last-of-type {
-  border-bottom: none;
+.popup__ad-banner:last-of-type {
+  margin-bottom: 0;
 }
 
-.popup__ad-link:hover {
-  color: #0d47a1;
-  text-decoration: underline;
+.popup__ad-banner:hover {
+  opacity: 0.9;
+  transform: scale(1.01);
 }
 
-.popup__ad-link::after {
-  content: ' >';
+.popup__ad-banner-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.popup__ad-banner-sub {
+  display: block;
   font-size: 10px;
-  color: #aaa;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.popup__ad-banner-arrow {
+  float: right;
+  font-size: 16px;
+  line-height: 1;
+  margin-top: -18px;
+  opacity: 0.7;
 }
 
 /* Info footer */

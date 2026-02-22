@@ -9,15 +9,20 @@ window.__otoriBuster.AFFILIATE = Object.freeze({
   AMAZON_TAG: 'vtubertrends-22',
   links: [
     {
-      text: '賃貸トラブル対策の本を探す',
-      keyword: '賃貸 トラブル 対策'
+      title: 'Amazon タイムセール',
+      sub: '本日のお得な商品をチェック',
+      url: 'https://www.amazon.co.jp/gp/goldbox',
+      color: '#FF9900'
     },
     {
-      text: '引越し必需品をチェック',
-      keyword: '引越し 必需品'
+      title: 'Amazon 売れ筋ランキング',
+      sub: '今みんなが買っているものは？',
+      url: 'https://www.amazon.co.jp/gp/bestsellers',
+      color: '#146EB4'
     }
   ],
-  buildUrl(keyword) {
-    return `https://www.amazon.co.jp/s?k=${encodeURIComponent(keyword)}&tag=${this.AMAZON_TAG}`;
+  buildUrl(baseUrl) {
+    const sep = baseUrl.includes('?') ? '&' : '?';
+    return `${baseUrl}${sep}tag=${this.AMAZON_TAG}`;
   }
 });

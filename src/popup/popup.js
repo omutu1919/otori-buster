@@ -10,17 +10,20 @@
   const statusText = document.getElementById('statusText');
   const summarySection = document.getElementById('summarySection');
 
-  // アフィリエイトリンク生成
+  // アフィリエイトバナー生成
   const aff = window.__otoriBuster && window.__otoriBuster.AFFILIATE;
   if (aff) {
     const adsSection = document.getElementById('adsSection');
     aff.links.forEach(link => {
       const a = document.createElement('a');
-      a.href = aff.buildUrl(link.keyword);
+      a.href = aff.buildUrl(link.url);
       a.target = '_blank';
       a.rel = 'noopener';
-      a.className = 'popup__ad-link';
-      a.textContent = link.text;
+      a.className = 'popup__ad-banner';
+      a.style.background = `linear-gradient(135deg, ${link.color}, ${link.color}dd)`;
+      a.innerHTML = `<span class="popup__ad-banner-title">${link.title}</span>`
+        + `<span class="popup__ad-banner-sub">${link.sub}</span>`
+        + `<span class="popup__ad-banner-arrow">&#8250;</span>`;
       adsSection.appendChild(a);
     });
   }

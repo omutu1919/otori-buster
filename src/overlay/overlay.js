@@ -141,24 +141,26 @@ window.__otoriBuster.overlay = (() => {
 
       .otori-panel__ad {
         display: block;
-        margin-top: 6px;
-        padding: 6px 10px;
-        background: #f5f5f5;
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: linear-gradient(135deg, #FF9900, #FFB84D);
         border-radius: 6px;
-        color: #1565c0;
+        color: #fff;
         text-decoration: none;
         font-size: 11px;
-        transition: background 0.2s;
+        font-weight: 700;
+        text-align: center;
+        transition: opacity 0.2s;
       }
 
       .otori-panel__ad:hover {
-        background: #e8e8e8;
-        text-decoration: underline;
+        opacity: 0.85;
       }
 
       .otori-panel__ad-label {
-        font-size: 9px;
-        color: #999;
+        font-size: 8px;
+        font-weight: 400;
+        opacity: 0.8;
         margin-right: 4px;
       }
     `;
@@ -195,8 +197,8 @@ window.__otoriBuster.overlay = (() => {
     // アフィリエイトリンク
     const aff = window.__otoriBuster.AFFILIATE;
     const adLink = aff ? aff.links[0] : null;
-    const adUrl = adLink ? aff.buildUrl(adLink.keyword) : '';
-    const adText = adLink ? adLink.text : '';
+    const adUrl = adLink ? aff.buildUrl(adLink.url) : '';
+    const adText = adLink ? adLink.title : '';
 
     // パネル
     const panel = document.createElement('div');
