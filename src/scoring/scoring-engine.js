@@ -10,9 +10,6 @@ window.__otoriBuster.scoringEngine = (() => {
 
   const { parserUtils, marketData } = window.__otoriBuster;
 
-  /**
-   * 因子の重み定義
-   */
   const WEIGHTS = Object.freeze({
     PRICE_GAP: 0.35,
     ADDRESS_VAGUE: 0.20,
@@ -21,11 +18,6 @@ window.__otoriBuster.scoringEngine = (() => {
     TOO_CHEAP: 0.15
   });
 
-  /**
-   * リスクレベル判定
-   * @param {number} score - 合計スコア（0-100）
-   * @returns {'safe'|'caution'|'warning'|'danger'}
-   */
   function getLevel(score) {
     if (score < 20) return 'safe';
     if (score < 45) return 'caution';
@@ -33,11 +25,7 @@ window.__otoriBuster.scoringEngine = (() => {
     return 'danger';
   }
 
-  /**
-   * 因子1: 相場との乖離スコア
-   * @param {import('../types/index.js').PropertyData} property
-   * @returns {import('../types/index.js').ScoreFactor}
-   */
+  /** 因子1: 相場との乖離 */
   function scorePriceGap(property) {
     const region = parserUtils.extractRegion(property.address);
     const ward = parserUtils.extractWard(property.address);
@@ -45,17 +33,10 @@ window.__otoriBuster.scoringEngine = (() => {
     const marketRent = marketData.getMarketRent(region, ward, layout);
 
     if (!marketRent || property.rent <= 0) {
-      return {
-        name: '相場との乖離',
-        rawScore: 0,
-        weight: WEIGHTS.PRICE_GAP,
-        weightedScore: 0,
-        reason: '相場データなし（判定スキップ）'
-      };
+      return { name: '相場との乖離', rawScore: 0, weight: WEIGHTS.PRICE_GAP, weightedScore: 0, reason: '相場データなし（判定スキップ）' };
     }
 
     const gap = (marketRent - property.rent) / marketRent;
-
     let rawScore;
     let reason;
 
@@ -76,76 +57,41 @@ window.__otoriBuster.scoringEngine = (() => {
       reason = `相場(${marketRent}万)より${Math.round(gap * 100)}%安い（おとりの可能性大）`;
     }
 
-    return {
-      name: '相場との乖離',
-      rawScore,
-      weight: WEIGHTS.PRICE_GAP,
-      weightedScore: Math.round(rawScore * WEIGHTS.PRICE_GAP),
-      reason
-    };
+    return { name: '相場との乖離', rawScore, weight: WEIGHTS.PRICE_GAP, weightedScore: Math.round(rawScore * WEIGHTS.PRICE_GAP), reason };
   }
 
-  /**
-   * 因子2: 住所の曖昧さスコア
-   * @param {import('../types/index.js').PropertyData} property
-   * @returns {import('../types/index.js').ScoreFactor}
-   */
+  /** 因子2: 住所の曖昧さ */
   function scoreAddressVague(property) {
     const detail = parserUtils.getAddressDetail(property.address);
-
-    const scoreMap = {
-      'full': 0,
-      'town': 60,
-      'ward': 80,
-      'none': 100
-    };
-
+    const scoreMap = { 'full': 0, 'town': 40, 'ward': 80, 'none': 100 };
     const reasonMap = {
-      'full': '番地まで記載あり',
-      'town': '町名までしか記載なし',
+      'full': '番地・丁目まで記載あり',
+      'town': '町名まで記載（番地なし）',
       'ward': '区名までしか記載なし',
       'none': '住所の記載なし'
     };
-
     const rawScore = scoreMap[detail];
-
-    return {
-      name: '住所の曖昧さ',
-      rawScore,
-      weight: WEIGHTS.ADDRESS_VAGUE,
-      weightedScore: Math.round(rawScore * WEIGHTS.ADDRESS_VAGUE),
-      reason: reasonMap[detail]
-    };
+    return { name: '住所の曖昧さ', rawScore, weight: WEIGHTS.ADDRESS_VAGUE, weightedScore: Math.round(rawScore * WEIGHTS.ADDRESS_VAGUE), reason: reasonMap[detail] };
   }
 
-  /**
-   * 因子3: 物件名なしスコア
-   * @param {import('../types/index.js').PropertyData} property
-   * @returns {import('../types/index.js').ScoreFactor}
-   */
+  /** 因子3: 物件名なし */
   function scoreNoName(property) {
     const hasName = property.name && property.name.trim() !== '';
     const rawScore = hasName ? 0 : 100;
-
-    return {
-      name: '物件名なし',
-      rawScore,
-      weight: WEIGHTS.NO_NAME,
-      weightedScore: Math.round(rawScore * WEIGHTS.NO_NAME),
-      reason: hasName ? '物件名あり' : '物件名の記載なし'
-    };
+    return { name: '物件名なし', rawScore, weight: WEIGHTS.NO_NAME, weightedScore: Math.round(rawScore * WEIGHTS.NO_NAME), reason: hasName ? '物件名あり' : '物件名の記載なし' };
   }
 
-  /**
-   * 因子4: 写真不足スコア
-   * @param {import('../types/index.js').PropertyData} property
-   * @returns {import('../types/index.js').ScoreFactor}
-   */
+  /** 因子4: 写真不足 */
   function scoreFewPhotos(property) {
     const count = property.photoCount;
+
+    // photoCount が -1 = 一覧ページで枚数不明 → スキップ
+    if (count < 0) {
+      return { name: '写真不足', rawScore: 0, weight: WEIGHTS.FEW_PHOTOS, weightedScore: 0, reason: '一覧ページのため判定スキップ' };
+    }
+
     let rawScore;
     let reason;
-
     if (count >= 5) {
       rawScore = 0;
       reason = `写真${count}枚（十分）`;
@@ -160,37 +106,20 @@ window.__otoriBuster.scoringEngine = (() => {
       reason = '写真なし';
     }
 
-    return {
-      name: '写真不足',
-      rawScore,
-      weight: WEIGHTS.FEW_PHOTOS,
-      weightedScore: Math.round(rawScore * WEIGHTS.FEW_PHOTOS),
-      reason
-    };
+    return { name: '写真不足', rawScore, weight: WEIGHTS.FEW_PHOTOS, weightedScore: Math.round(rawScore * WEIGHTS.FEW_PHOTOS), reason };
   }
 
-  /**
-   * 因子5: 極端に安い家賃スコア
-   * @param {import('../types/index.js').PropertyData} property
-   * @returns {import('../types/index.js').ScoreFactor}
-   */
+  /** 因子5: 極端に安い家賃 */
   function scoreTooCheap(property) {
     const region = parserUtils.extractRegion(property.address);
     const minRent = marketData.getMinRent(region);
 
     if (property.rent <= 0) {
-      return {
-        name: '家賃が極端に安い',
-        rawScore: 0,
-        weight: WEIGHTS.TOO_CHEAP,
-        weightedScore: 0,
-        reason: '家賃情報なし（判定スキップ）'
-      };
+      return { name: '家賃が極端に安い', rawScore: 0, weight: WEIGHTS.TOO_CHEAP, weightedScore: 0, reason: '家賃情報なし（判定スキップ）' };
     }
 
     const rawScore = property.rent < minRent ? 100 : 0;
     const regionLabel = region === 'tokyo' ? '東京' : region === 'osaka' ? '大阪' : '不明';
-
     return {
       name: '家賃が極端に安い',
       rawScore,
@@ -202,11 +131,6 @@ window.__otoriBuster.scoringEngine = (() => {
     };
   }
 
-  /**
-   * 総合おとりスコアを算出
-   * @param {import('../types/index.js').PropertyData} property
-   * @returns {import('../types/index.js').OtoriScore}
-   */
   function calculate(property) {
     const factors = [
       scorePriceGap(property),

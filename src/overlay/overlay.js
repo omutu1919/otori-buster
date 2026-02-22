@@ -22,10 +22,19 @@ window.__otoriBuster.overlay = (() => {
     danger: '危険'
   });
 
-  /**
-   * Shadow DOM内のスタイルシート
-   * @returns {string}
-   */
+  // 現在開いているパネル（1つだけ開く制御用）
+  let openPanel = null;
+
+  // グローバルクリックハンドラ（1回だけ登録）
+  document.addEventListener('click', (e) => {
+    // otori-buster-host 内のクリックは無視
+    if (e.target.closest && e.target.closest('.otori-buster-host')) return;
+    if (openPanel) {
+      openPanel.classList.remove('otori-panel--open');
+      openPanel = null;
+    }
+  }, true);
+
   function getShadowCSS() {
     return `
       :host {
@@ -169,11 +178,6 @@ window.__otoriBuster.overlay = (() => {
     `;
   }
 
-  /**
-   * バッジ要素を生成
-   * @param {import('../types/index.js').OtoriScore} score
-   * @returns {HTMLElement}
-   */
   function createBadge(score) {
     const colors = COLORS[score.level];
     const badge = document.createElement('div');
@@ -186,11 +190,6 @@ window.__otoriBuster.overlay = (() => {
     return badge;
   }
 
-  /**
-   * 詳細パネルを生成
-   * @param {import('../types/index.js').OtoriScore} score
-   * @returns {HTMLElement}
-   */
   function createPanel(score) {
     const colors = COLORS[score.level];
     const panel = document.createElement('div');
@@ -233,74 +232,56 @@ window.__otoriBuster.overlay = (() => {
 
   /**
    * 物件要素にオーバーレイを付与
-   * @param {HTMLElement} element - 物件カードのDOM要素
-   * @param {import('../types/index.js').OtoriScore} score - おとりスコア
    */
   function attach(element, score) {
-    // 既にアタッチ済みならスキップ
     if (element.querySelector('.otori-buster-host')) return;
 
-    // 親要素にrelative位置を付与
     const computedPosition = window.getComputedStyle(element).position;
     if (computedPosition === 'static') {
-      element.classList.add('otori-buster-positioned');
+      element.style.position = 'relative';
     }
 
-    // Shadow DOMホスト作成
     const host = document.createElement('div');
     host.className = 'otori-buster-host';
-    const shadow = host.attachShadow({ mode: 'closed' });
+    const shadow = host.attachShadow({ mode: 'open' });
 
-    // スタイル注入
     const style = document.createElement('style');
     style.textContent = getShadowCSS();
     shadow.appendChild(style);
 
-    // バッジ作成
     const badge = createBadge(score);
     shadow.appendChild(badge);
 
-    // パネル作成
     const panel = createPanel(score);
     shadow.appendChild(panel);
 
-    // バッジクリックでパネル開閉
-    badge.addEventListener('click', (e) => {
+    // バッジクリック: ホスト要素のonclickで処理（リターゲット問題回避）
+    host.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      panel.classList.toggle('otori-panel--open');
-    });
 
-    // パネル閉じるボタン
-    const closeBtn = panel.querySelector('.otori-panel__close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
+      const isOpen = panel.classList.contains('otori-panel--open');
+
+      // 現在開いてるパネルを閉じる
+      if (openPanel && openPanel !== panel) {
+        openPanel.classList.remove('otori-panel--open');
+      }
+
+      if (isOpen) {
         panel.classList.remove('otori-panel--open');
-      });
-    }
-
-    // パネル外クリックで閉じる
-    document.addEventListener('click', () => {
-      panel.classList.remove('otori-panel--open');
-    });
-
-    // パネル内クリックは伝播停止
-    panel.addEventListener('click', (e) => {
-      e.stopPropagation();
+        openPanel = null;
+      } else {
+        panel.classList.add('otori-panel--open');
+        openPanel = panel;
+      }
     });
 
     element.appendChild(host);
   }
 
-  /**
-   * ページ内の全オーバーレイを削除
-   */
   function removeAll() {
     document.querySelectorAll('.otori-buster-host').forEach(el => el.remove());
-    document.querySelectorAll('.otori-buster-positioned').forEach(el => {
-      el.classList.remove('otori-buster-positioned');
-    });
+    openPanel = null;
   }
 
   return Object.freeze({ attach, removeAll });

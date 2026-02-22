@@ -1,6 +1,6 @@
 /**
  * おとり物件バスター - SUUMO パーサー
- * https://suumo.jp/chintai/
+ * Puppeteerで確認済みのセレクタ使用
  */
 
 window.__otoriBuster = window.__otoriBuster || {};
@@ -9,84 +9,65 @@ window.__otoriBuster.suumoParser = (() => {
   'use strict';
 
   const { parserUtils } = window.__otoriBuster;
-  const { safeText, safeCount, parseRent, parseManagementFee, normalizeLayout, parseArea, parseAge, parseWalkMinutes } = parserUtils;
+  const { safeText, safeCount, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes } = parserUtils;
 
   const SITE_NAME = 'suumo';
 
-  /**
-   * このパーサーが現在のページで使用可能か判定
-   * @returns {boolean}
-   */
   function canParse() {
     return location.hostname === 'suumo.jp' && location.pathname.includes('/chintai/');
   }
 
-  /**
-   * 物件カード1件を解析
-   * @param {HTMLElement} card - div.cassetteitem 要素
-   * @returns {import('../types/index.js').PropertyData}
-   */
-  function parseCard(card) {
-    // 物件名
-    const name = safeText(card, '.cassetteitem_content-title');
+  // === 一覧ページ ===
 
-    // 住所
-    const address = safeText(card, '.cassetteitem_detail-col1');
+  function parseListPage() {
+    const cards = document.querySelectorAll('div.cassetteitem');
+    const properties = [];
 
-    // 写真枚数
-    const photoCount = safeCount(card, '.cassetteitem_object-item img');
+    cards.forEach(card => {
+      try {
+        const name = safeText(card, '.cassetteitem_content-title');
+        const address = safeText(card, '.cassetteitem_detail-col1');
 
-    // 築年数・階数情報
-    const detailCol3Items = card.querySelectorAll('.cassetteitem_detail-col3 div');
-    const ageText = detailCol3Items.length > 0 ? detailCol3Items[0].textContent.trim() : '';
-    const age = parseAge(ageText);
+        // 一覧ページの写真は代表サムネ1枚のみなので枚数判定不可 → -1
+        const photoCount = -1;
 
-    // 交通情報
-    const stationEl = card.querySelector('.cassetteitem_detail-col2 .cassetteitem_detail-text');
-    const stationText = stationEl ? stationEl.textContent.trim() : '';
-    const walkMinutes = parseWalkMinutes(stationText);
+        const detailCol3Items = card.querySelectorAll('.cassetteitem_detail-col3 div');
+        const ageText = detailCol3Items.length > 0 ? detailCol3Items[0].textContent.trim() : '';
+        const age = parseAge(ageText);
 
-    // SUUMOは一つの建物カードに複数の部屋（tbody）がある
-    const rooms = card.querySelectorAll('.cassetteitem_other tbody tr');
+        const stationEl = card.querySelector('.cassetteitem_detail-col2 .cassetteitem_detail-text');
+        const stationText = stationEl ? stationEl.textContent.trim() : '';
+        const walkMinutes = parseWalkMinutes(stationText);
 
-    if (rooms.length === 0) {
-      // 部屋情報が見つからない場合、カード全体から情報取得
-      return [createPropertyFromCard(card, name, address, photoCount, age, stationText, walkMinutes)];
-    }
+        // 1建物に複数部屋
+        const rooms = card.querySelectorAll('.cassetteitem_other tbody tr');
 
-    return Array.from(rooms).map(room => {
-      const rentText = safeText(room, '.cassetteitem_price--rent');
-      const feeText = safeText(room, '.cassetteitem_price--administration');
-      const layoutText = safeText(room, '.cassetteitem_madori');
-      const areaText = safeText(room, '.cassetteitem_menseki');
-
-      return {
-        name,
-        rent: parseRent(rentText),
-        managementFee: parseManagementFee(feeText),
-        address,
-        layout: normalizeLayout(layoutText),
-        photoCount,
-        area: areaText,
-        age,
-        station: stationText,
-        walkMinutes,
-        source: SITE_NAME,
-        element: card
-      };
+        if (rooms.length === 0) {
+          properties.push(makeProperty(card, name, address, photoCount, age, stationText, walkMinutes,
+            safeText(card, '.cassetteitem_price--rent'),
+            safeText(card, '.cassetteitem_price--administration'),
+            safeText(card, '.cassetteitem_madori'),
+            safeText(card, '.cassetteitem_menseki')
+          ));
+        } else {
+          rooms.forEach(room => {
+            properties.push(makeProperty(card, name, address, photoCount, age, stationText, walkMinutes,
+              safeText(room, '.cassetteitem_price--rent'),
+              safeText(room, '.cassetteitem_price--administration'),
+              safeText(room, '.cassetteitem_madori'),
+              safeText(room, '.cassetteitem_menseki')
+            ));
+          });
+        }
+      } catch (err) {
+        console.error('[おとり物件バスター] SUUMO一覧解析エラー:', err);
+      }
     });
+
+    return properties;
   }
 
-  /**
-   * フォールバック: カード全体から1物件として情報取得
-   * @returns {import('../types/index.js').PropertyData}
-   */
-  function createPropertyFromCard(card, name, address, photoCount, age, station, walkMinutes) {
-    const rentText = safeText(card, '.cassetteitem_price--rent');
-    const feeText = safeText(card, '.cassetteitem_price--administration');
-    const layoutText = safeText(card, '.cassetteitem_madori');
-    const areaText = safeText(card, '.cassetteitem_menseki');
-
+  function makeProperty(card, name, address, photoCount, age, station, walkMinutes, rentText, feeText, layoutText, areaText) {
     return {
       name,
       rent: parseRent(rentText),
@@ -103,29 +84,91 @@ window.__otoriBuster.suumoParser = (() => {
     };
   }
 
-  /**
-   * ページ内の全物件を解析
-   * @returns {import('../types/index.js').PropertyData[]}
-   */
-  function parse() {
-    const cards = document.querySelectorAll('div.cassetteitem');
-    const properties = [];
+  // === 詳細ページ ===
 
-    cards.forEach(card => {
-      try {
-        const parsed = parseCard(card);
-        parsed.forEach(p => properties.push(p));
-      } catch (err) {
-        console.error('[おとり物件バスター] SUUMO解析エラー:', err);
-      }
-    });
-
-    return properties;
+  function isDetailPage() {
+    return /\/chintai\/[a-z]{2,3}_\d+/.test(location.pathname);
   }
 
-  return Object.freeze({
-    name: SITE_NAME,
-    canParse,
-    parse
-  });
+  /**
+   * 詳細ページのテーブルからラベルに対応する値を抽出
+   * SUUMOは "賃料(管理費)" のように複合ラベルを使うので部分一致
+   */
+  function tableValue(label) {
+    const ths = document.querySelectorAll('th');
+    for (const th of ths) {
+      if (th.textContent.trim().includes(label)) {
+        const td = th.nextElementSibling;
+        if (td) return td.textContent.trim();
+      }
+    }
+    return '';
+  }
+
+  function parseDetailPage() {
+    const name = safeText(document.body, '.section_h1-header-title') ||
+                 safeText(document.body, 'h1');
+
+    const address = tableValue('所在地');
+
+    // "12.1万円\n(8000円)" から家賃部分だけ抽出
+    const rentRaw = tableValue('賃料');
+    const rent = parseRent(rentRaw);
+
+    // 管理費は賃料セルの括弧内、またはtableから
+    let fee = 0;
+    const feeMatch = rentRaw.match(/[（(]([\d,.]+円?)[)）]/);
+    if (feeMatch) {
+      fee = parseManagementFee(feeMatch[1]);
+    }
+
+    const layoutText = tableValue('間取り');
+    const areaText = tableValue('専有面積');
+    const ageText = tableValue('築年');
+    const stationText = tableValue('交通');
+
+    // 詳細ページはギャラリー写真を数える
+    const photoCount = safeCount(document.body, '[class*="gallery"] img, [class*="photo"] img');
+
+    const targetEl = document.querySelector('.section_h1-header') ||
+                     document.querySelector('h1');
+
+    if (!targetEl) {
+      console.log('[おとり物件バスター] SUUMO詳細: バッジ表示先が見つかりません');
+      return [];
+    }
+
+    console.log('[おとり物件バスター] SUUMO詳細:', { name, address, rent, layout: layoutText, photoCount });
+
+    return [{
+      name,
+      rent,
+      managementFee: fee,
+      address,
+      layout: normalizeLayout(layoutText),
+      photoCount,
+      area: areaText,
+      age: parseAge(ageText),
+      station: stationText,
+      walkMinutes: parseWalkMinutes(stationText),
+      source: SITE_NAME,
+      element: targetEl
+    }];
+  }
+
+  // === メイン ===
+
+  function parse() {
+    if (isDetailPage()) {
+      try {
+        return parseDetailPage();
+      } catch (err) {
+        console.error('[おとり物件バスター] SUUMO詳細ページ解析エラー:', err);
+        return [];
+      }
+    }
+    return parseListPage();
+  }
+
+  return Object.freeze({ name: SITE_NAME, canParse, parse });
 })();

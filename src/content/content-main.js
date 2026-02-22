@@ -20,10 +20,6 @@
     ns.yahooParser
   ].filter(Boolean);
 
-  /**
-   * 適用可能なパーサーを検出
-   * @returns {import('../types/index.js').SiteParser|null}
-   */
   function detectParser() {
     for (const parser of PARSERS) {
       if (parser.canParse()) return parser;
@@ -33,125 +29,95 @@
 
   /**
    * メイン処理: 物件解析 → スコア算出 → オーバーレイ表示
+   * 既にバッジがある要素はスキップする（差分更新）
    */
   function run() {
     const parser = detectParser();
     if (!parser) return;
 
-    console.log(`[おとり物件バスター] ${parser.name} パーサーで解析開始`);
-
     const properties = parser.parse();
-    if (properties.length === 0) {
-      console.log('[おとり物件バスター] 物件が見つかりませんでした');
-      return;
-    }
+    if (properties.length === 0) return;
 
-    console.log(`[おとり物件バスター] ${properties.length}件の物件を検出`);
+    console.log(`[おとり物件バスター] ${parser.name}: ${properties.length}件検出`);
 
-    // 既存のオーバーレイを削除（再実行対策）
-    ns.overlay.removeAll();
-
-    let scored = 0;
-    const elementScores = new Map();
+    let newCount = 0;
+    const allScores = new Map();
 
     properties.forEach(property => {
       try {
         if (!property.element) return;
 
-        // 同じ要素に対して最もスコアの高い結果を使う（SUUMO対応: 1建物に複数部屋）
         const score = ns.scoringEngine.calculate(property);
 
-        const existing = elementScores.get(property.element);
+        // 同じ要素には最高スコアを使う（1建物に複数部屋の場合）
+        const existing = allScores.get(property.element);
         if (!existing || score.total > existing.total) {
-          elementScores.set(property.element, score);
+          allScores.set(property.element, score);
         }
-
-        scored++;
       } catch (err) {
         console.error('[おとり物件バスター] スコアリングエラー:', err);
       }
     });
 
-    // オーバーレイ表示
-    elementScores.forEach((score, element) => {
-      ns.overlay.attach(element, score);
+    // 新しい要素にだけバッジ追加（既存はattach内でスキップ）
+    allScores.forEach((score, element) => {
+      if (!element.querySelector('.otori-buster-host')) {
+        ns.overlay.attach(element, score);
+        newCount++;
+      }
     });
 
-    console.log(`[おとり物件バスター] ${scored}件をスコアリング、${elementScores.size}件にバッジ表示`);
+    if (newCount > 0) {
+      console.log(`[おとり物件バスター] ${newCount}件にバッジ追加`);
+    }
 
-    // バックグラウンドに結果を送信
-    notifyBackground(parser.name, elementScores);
+    // 結果をstorage.localに保存（popup用）
+    saveSummary(parser.name, allScores);
   }
 
   /**
-   * バックグラウンドスクリプトに結果通知
-   * @param {string} siteName
-   * @param {Map<HTMLElement, import('../types/index.js').OtoriScore>} elementScores
+   * 結果をストレージに保存
    */
-  function notifyBackground(siteName, elementScores) {
+  function saveSummary(siteName, elementScores) {
+    const summary = {
+      site: siteName,
+      total: elementScores.size,
+      danger: 0,
+      warning: 0,
+      caution: 0,
+      safe: 0
+    };
+
+    elementScores.forEach(score => {
+      summary[score.level]++;
+    });
+
     try {
-      const summary = {
-        site: siteName,
-        total: elementScores.size,
-        danger: 0,
-        warning: 0,
-        caution: 0,
-        safe: 0
-      };
-
-      elementScores.forEach(score => {
-        summary[score.level]++;
-      });
-
-      chrome.runtime.sendMessage({
-        type: 'SCAN_RESULT',
-        data: summary
-      });
+      chrome.storage.local.set({ scanResult: summary });
+      chrome.runtime.sendMessage({ type: 'SCAN_RESULT', data: summary }).catch(() => {});
     } catch (err) {
-      // バックグラウンドが応答しない場合は無視
+      // 無視
     }
   }
 
   /**
-   * 設定を確認して実行
+   * 初期化
    */
   function init() {
-    chrome.storage.local.get(ns.DEFAULT_SETTINGS, (settings) => {
-      if (!settings.enabled) {
-        console.log('[おとり物件バスター] 無効化されています');
-        return;
-      }
+    chrome.storage.local.get({ enabled: true }, (settings) => {
+      if (!settings.enabled) return;
 
       // 初回実行
       run();
 
-      // DOMの動的変更を監視（無限スクロール対応）
-      const observer = new MutationObserver(debounce(() => {
+      // 新しい物件カードの追加を定期チェック（無限スクロール対応）
+      // MutationObserverは自分のDOM変更で無限ループするためsetIntervalを使用
+      setInterval(() => {
         run();
-      }, 1000));
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
+      }, 3000);
     });
   }
 
-  /**
-   * デバウンス
-   * @param {Function} fn
-   * @param {number} delay
-   * @returns {Function}
-   */
-  function debounce(fn, delay) {
-    let timer = null;
-    return (...args) => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => fn(...args), delay);
-    };
-  }
-
-  // DOMが準備完了していれば即実行、そうでなければ待機
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

@@ -21,29 +21,15 @@
     const enabled = toggleEl.checked;
     chrome.storage.local.set({ enabled });
     updateUI(enabled);
-
-    // 現在のタブでコンテンツスクリプトに通知
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'TOGGLE', enabled }).catch(() => {});
-      }
-    });
   });
 
-  // 現在のタブのスキャン結果を取得
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (!tabs[0]) return;
-
-    const tabId = tabs[0].id;
-
-    chrome.storage.session.get(`tab_${tabId}`, (result) => {
-      const data = result[`tab_${tabId}`];
-      if (data) {
-        showSummary(data);
-      } else {
-        statusText.textContent = '対応サイトで物件一覧を開いてください';
-      }
-    });
+  // スキャン結果をstorage.localから取得（最もシンプルで確実）
+  chrome.storage.local.get('scanResult', (result) => {
+    if (result.scanResult) {
+      showSummary(result.scanResult);
+    } else {
+      statusText.textContent = '対応サイトで物件一覧を開いてください';
+    }
   });
 
   /**
@@ -54,7 +40,6 @@
     const popup = document.querySelector('.popup');
     if (enabled) {
       popup.classList.remove('popup--disabled');
-      statusText.textContent = 'スキャン中...';
     } else {
       popup.classList.add('popup--disabled');
       statusIcon.textContent = '--';
@@ -77,19 +62,21 @@
     document.getElementById('cautionCount').textContent = data.caution || 0;
     document.getElementById('safeCount').textContent = data.safe || 0;
 
-    // ステータスアイコン更新
+    const siteName = data.site || '';
+    const siteLabel = { suumo: 'SUUMO', homes: "HOME'S", athome: 'at home', chintai: 'CHINTAI', yahoo: 'Yahoo!不動産' }[siteName] || siteName;
+
     if (data.danger > 0) {
       statusIcon.textContent = data.danger;
       statusIcon.style.background = '#f44336';
-      statusText.textContent = `${data.danger}件の危険な物件を検出`;
+      statusText.textContent = `${siteLabel}: ${data.danger}件の危険な物件を検出`;
     } else if (data.warning > 0) {
       statusIcon.textContent = data.warning;
       statusIcon.style.background = '#ff9800';
-      statusText.textContent = `${data.warning}件の要注意物件を検出`;
+      statusText.textContent = `${siteLabel}: ${data.warning}件の要注意物件を検出`;
     } else if (data.total > 0) {
       statusIcon.textContent = data.total;
       statusIcon.style.background = '#4caf50';
-      statusText.textContent = `${data.total}件を解析済み（問題なし）`;
+      statusText.textContent = `${siteLabel}: ${data.total}件を解析済み`;
     } else {
       statusIcon.textContent = '0';
       statusIcon.style.background = '#e0e0e0';
