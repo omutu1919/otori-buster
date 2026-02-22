@@ -25,6 +25,14 @@ window.__otoriBuster.overlay = (() => {
   // 全ホスト要素を追跡（他パネルを閉じる用）
   const allHosts = [];
 
+  /**
+   * 物件カード内の詳細リンクURLを取得
+   */
+  function getPropertyDetailUrl(element) {
+    const link = element.querySelector('a[href*="/chintai/"], a[href*="/rent/detail/"], a[href*="/detail/"]');
+    return link ? link.href : '';
+  }
+
   function getShadowCSS() {
     return `
       :host {
@@ -163,13 +171,37 @@ window.__otoriBuster.overlay = (() => {
         opacity: 0.8;
         margin-right: 4px;
       }
+
+      .otori-panel__report-btn {
+        display: block;
+        width: 100%;
+        padding: 8px;
+        margin-top: 8px;
+        background: none;
+        border: 1.5px solid #c62828;
+        border-radius: 6px;
+        color: #c62828;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+        font-family: inherit;
+      }
+
+      .otori-panel__report-btn:hover {
+        background: #c62828;
+        color: #fff;
+      }
     `;
   }
 
   /**
    * 物件要素にオーバーレイを付与
+   * @param {HTMLElement} element
+   * @param {Object} score
+   * @param {Object} [property] - 通報フォーム用の物件データ
    */
-  function attach(element, score) {
+  function attach(element, score, property) {
     if (element.querySelector('.otori-buster-host')) return;
 
     const computedPosition = window.getComputedStyle(element).position;
@@ -226,6 +258,7 @@ window.__otoriBuster.overlay = (() => {
       <div class="otori-panel__body">${factorsHTML}</div>
       <div class="otori-panel__footer">
         おとり物件バスター - スコアは参考値です
+        <button class="otori-panel__report-btn" data-action="report">この物件を通報する</button>
         <a href="${adUrl}" target="_blank" rel="noopener" class="otori-panel__ad"><span class="otori-panel__ad-label">PR</span>${adText}</a>
       </div>
     `;
@@ -260,12 +293,34 @@ window.__otoriBuster.overlay = (() => {
       host.removeAttribute('data-open');
     });
 
+    // 通報ボタン
+    const reportBtn = panel.querySelector('[data-action="report"]');
+    if (reportBtn) {
+      reportBtn.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (window.__otoriBuster.reportForm) {
+          const detailUrl = getPropertyDetailUrl(element);
+          window.__otoriBuster.reportForm.open({
+            name: property ? property.name : '',
+            url: detailUrl || location.href,
+            siteName: property ? property.source : '',
+            rent: property ? property.rent : 0,
+            address: property ? property.address : '',
+            score: score.total,
+            level: score.level
+          });
+        }
+        host.removeAttribute('data-open');
+      });
+    }
+
     // パネル内のクリック/マウスイベントが外に漏れないようにする
     panel.addEventListener('mousedown', (e) => { e.stopPropagation(); });
     panel.addEventListener('click', (e) => {
       e.stopPropagation();
-      // アフィリエイトリンクのクリックは許可
-      if (!e.target.closest('a')) e.preventDefault();
+      // アフィリエイトリンク・通報ボタンのクリックは許可
+      if (!e.target.closest('a') && !e.target.closest('button')) e.preventDefault();
     });
     host.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); });
 
@@ -276,14 +331,14 @@ window.__otoriBuster.overlay = (() => {
   /**
    * 既存バッジを削除して新スコアで再描画（プリフェッチ更新用）
    */
-  function update(element, score) {
+  function update(element, score, property) {
     const existing = element.querySelector('.otori-buster-host');
     if (existing) {
       const idx = allHosts.indexOf(existing);
       if (idx >= 0) allHosts.splice(idx, 1);
       existing.remove();
     }
-    attach(element, score);
+    attach(element, score, property);
   }
 
   function removeAll() {

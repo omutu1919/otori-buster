@@ -10,6 +10,51 @@
   const statusText = document.getElementById('statusText');
   const summarySection = document.getElementById('summarySection');
 
+  // 通報リンク生成
+  const reportConfig = window.__otoriBuster && window.__otoriBuster.REPORT_CONFIG;
+  if (reportConfig) {
+    const officialLinksEl = document.getElementById('officialLinks');
+    reportConfig.officialLinks.forEach(link => {
+      const a = document.createElement('a');
+      a.href = link.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.className = 'popup__report-link';
+      a.innerHTML = `<span class="popup__report-link-icon">${link.icon || ''}</span>`
+        + `<span class="popup__report-link-body">`
+        + `<span class="popup__report-link-label">${link.label}</span>`
+        + `<span class="popup__report-link-desc">${link.description || ''}</span>`
+        + `</span>`
+        + `<span class="popup__report-link-arrow">&#8250;</span>`;
+      officialLinksEl.appendChild(a);
+    });
+
+    // 現在のサイトに対応するリンクを表示
+    chrome.storage.local.get('scanResult', (result) => {
+      if (result.scanResult && result.scanResult.site) {
+        const siteInfo = reportConfig.siteLinks[result.scanResult.site];
+        if (siteInfo) {
+          const siteLinkEl = document.getElementById('siteLink');
+          const a = document.createElement('a');
+          a.href = siteInfo.url;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          a.className = 'popup__report-site-link';
+          a.textContent = `${siteInfo.label} に問い合わせる`;
+          siteLinkEl.appendChild(a);
+        }
+      }
+    });
+
+    // 通報件数を表示
+    chrome.storage.local.get({ reports: [] }, (result) => {
+      const count = result.reports.length;
+      if (count > 0) {
+        document.getElementById('reportStats').textContent = `${count}件の通報データを蓄積中`;
+      }
+    });
+  }
+
   // アフィリエイトバナー生成
   const aff = window.__otoriBuster && window.__otoriBuster.AFFILIATE;
   if (aff) {

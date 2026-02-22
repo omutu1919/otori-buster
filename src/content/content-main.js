@@ -71,7 +71,8 @@
     // 新しい要素にだけバッジ追加（既存はattach内でスキップ）
     allScores.forEach((score, element) => {
       if (!element.querySelector('.otori-buster-host')) {
-        ns.overlay.attach(element, score);
+        const property = propertyCache.get(element);
+        ns.overlay.attach(element, score, property);
         newCount++;
       }
       latestScores.set(element, score);
@@ -144,7 +145,7 @@
     propertyCache.set(element, updatedProperty);
     latestScores.set(element, newScore);
 
-    ns.overlay.update(element, newScore);
+    ns.overlay.update(element, newScore, updatedProperty);
     console.log(`[おとり物件バスター] プリフェッチ更新: 写真${photoCount}枚 → スコア${newScore.total}(${newScore.level})`);
   }
 

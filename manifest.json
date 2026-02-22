@@ -31,6 +31,7 @@
       ],
       "js": [
         "src/config/affiliate.js",
+        "src/config/report-config.js",
         "src/types/index.js",
         "src/parsers/parser-utils.js",
         "src/market/market-data.js",
@@ -41,6 +42,7 @@
         "src/parsers/chintai-parser.js",
         "src/parsers/yahoo-parser.js",
         "src/overlay/overlay.js",
+        "src/report/report-form.js",
         "src/content/photo-prefetch.js",
         "src/content/content-main.js"
       ],
