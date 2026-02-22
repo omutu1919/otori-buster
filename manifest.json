@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "不動産ポータルサイトの物件をリアルタイム分析し、おとり物件の可能性をスコア表示するChrome拡張機能",
   "permissions": ["storage", "activeTab"],
-  "host_permissions": ["https://tsumocchi.com/api/otori-report*"],
+  "host_permissions": ["https://ai-kakudai.com/api/otori-report*"],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
