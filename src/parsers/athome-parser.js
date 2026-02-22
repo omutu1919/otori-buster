@@ -17,6 +17,19 @@ window.__otoriBuster.athomeParser = (() => {
 
   const SITE_NAME = 'athome';
 
+  function extractCompany(container) {
+    const ths = container.querySelectorAll('th, dt');
+    for (const th of ths) {
+      if (th.textContent.trim().match(/取扱|会社|不動産/)) {
+        const next = th.nextElementSibling;
+        if (next) return next.textContent.trim().slice(0, 100);
+      }
+    }
+    const el = container.querySelector('[class*="company"], [class*="agency"], [class*="shop"]');
+    if (el) return el.textContent.trim().slice(0, 100);
+    return '';
+  }
+
   function canParse() {
     return location.hostname.endsWith('athome.co.jp') && location.pathname.includes('/chintai/');
   }
@@ -107,6 +120,7 @@ window.__otoriBuster.athomeParser = (() => {
           age: parseAge(ageText),
           station: stationText,
           walkMinutes: parseWalkMinutes(stationText),
+          company: extractCompany(card),
           source: SITE_NAME,
           element: card
         });
@@ -146,6 +160,7 @@ window.__otoriBuster.athomeParser = (() => {
       age: parseAge(ageText),
       station: stationText,
       walkMinutes: parseWalkMinutes(stationText),
+      company: extractCompany(document.body),
       source: SITE_NAME,
       element: targetEl
     }];

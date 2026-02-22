@@ -301,14 +301,15 @@ window.__otoriBuster.overlay = (() => {
         e.preventDefault();
         if (window.__otoriBuster.reportForm) {
           const detailUrl = getPropertyDetailUrl(element);
+          // 全プロパティデータ + 全スコア因子を通報フォームに渡す
+          const fullProperty = property ? { ...property, element: undefined } : {};
           window.__otoriBuster.reportForm.open({
-            name: property ? property.name : '',
+            ...fullProperty,
             url: detailUrl || location.href,
             siteName: property ? property.source : '',
-            rent: property ? property.rent : 0,
-            address: property ? property.address : '',
             score: score.total,
-            level: score.level
+            level: score.level,
+            factors: score.factors || []
           });
         }
         host.removeAttribute('data-open');

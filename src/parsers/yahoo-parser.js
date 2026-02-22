@@ -25,6 +25,19 @@ window.__otoriBuster.yahooParser = (() => {
 
   const SITE_NAME = 'yahoo';
 
+  function extractCompany(container) {
+    const el = container.querySelector('[class*="Company"], [class*="company"], [class*="Agency"]');
+    if (el) return el.textContent.trim().slice(0, 100);
+    const ths = container.querySelectorAll('th, dt');
+    for (const th of ths) {
+      if (th.textContent.trim().match(/取扱|会社|不動産/)) {
+        const next = th.nextElementSibling;
+        if (next) return next.textContent.trim().slice(0, 100);
+      }
+    }
+    return '';
+  }
+
   function canParse() {
     return location.hostname === 'realestate.yahoo.co.jp' &&
            (location.pathname.includes('/rent/') || location.pathname.includes('/chintai/'));
@@ -87,6 +100,7 @@ window.__otoriBuster.yahooParser = (() => {
             name, rent: 0, managementFee: 0, address,
             layout: '', photoCount, area: '', age,
             station: stationText, walkMinutes: parseWalkMinutes(stationText),
+            company: extractCompany(building),
             source: SITE_NAME, element: building
           });
         } else {
@@ -111,6 +125,7 @@ window.__otoriBuster.yahooParser = (() => {
               age,
               station: stationText,
               walkMinutes: parseWalkMinutes(stationText),
+              company: extractCompany(building),
               source: SITE_NAME,
               element: building
             });
@@ -162,6 +177,7 @@ window.__otoriBuster.yahooParser = (() => {
       age: parseAge(ageText),
       station: stationText,
       walkMinutes: parseWalkMinutes(stationText),
+      company: extractCompany(document.body),
       source: SITE_NAME,
       element: targetEl
     }];

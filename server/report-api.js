@@ -96,17 +96,31 @@ app.post('/api/otori-report', (req, res) => {
 
   const report = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+    // 物件データ（ページから取得できた全情報）
     url: data.url,
     propertyName: (data.propertyName || '').slice(0, 200),
     siteName: data.siteName,
     rent: Number(data.rent) || 0,
+    managementFee: Number(data.managementFee) || 0,
     address: (data.address || '').slice(0, 200),
+    layout: (data.layout || '').slice(0, 50),
+    area: (data.area || '').slice(0, 50),
+    age: Number(data.age) ?? -1,
+    station: (data.station || '').slice(0, 200),
+    walkMinutes: Number(data.walkMinutes) ?? -1,
+    photoCount: Number(data.photoCount) ?? -1,
+    company: (data.company || '').slice(0, 100),
+    // スコア情報
     score: Number(data.score) || 0,
     level: data.level || '',
+    factors: Array.isArray(data.factors) ? data.factors.slice(0, 10) : [],
+    // ユーザー入力
     reason: data.reason,
     reasonLabel: (data.reasonLabel || '').slice(0, 100),
     comment: (data.comment || '').slice(0, 2000),
+    // メタデータ
     reportedAt: data.reportedAt || new Date().toISOString(),
+    pageUrl: (data.pageUrl || '').slice(0, 500),
     ip: req.ip,
     userAgent: req.headers['user-agent'] || '',
     receivedAt: new Date().toISOString()

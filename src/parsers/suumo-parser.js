@@ -67,6 +67,26 @@ window.__otoriBuster.suumoParser = (() => {
     return properties;
   }
 
+  /**
+   * 不動産会社名を取得（カードまたはページから）
+   */
+  function extractCompany(container) {
+    // 詳細ページ: テーブルから取得
+    const labels = ['取扱', '会社名', '不動産会社', '仲介'];
+    const ths = container.querySelectorAll('th, dt');
+    for (const th of ths) {
+      const text = th.textContent.trim();
+      if (labels.some(l => text.includes(l))) {
+        const next = th.nextElementSibling;
+        if (next) return next.textContent.trim().slice(0, 100);
+      }
+    }
+    // 一覧ページ: 会社名リンク
+    const companyLink = container.querySelector('a[href*="/kaisha/"], .cassetteitem_detail-text--lead');
+    if (companyLink) return companyLink.textContent.trim().slice(0, 100);
+    return '';
+  }
+
   function makeProperty(card, name, address, photoCount, age, station, walkMinutes, rentText, feeText, layoutText, areaText) {
     return {
       name,
@@ -79,6 +99,7 @@ window.__otoriBuster.suumoParser = (() => {
       age,
       station,
       walkMinutes,
+      company: extractCompany(card),
       source: SITE_NAME,
       element: card
     };
@@ -151,6 +172,7 @@ window.__otoriBuster.suumoParser = (() => {
       age: parseAge(ageText),
       station: stationText,
       walkMinutes: parseWalkMinutes(stationText),
+      company: extractCompany(document.body),
       source: SITE_NAME,
       element: targetEl
     }];

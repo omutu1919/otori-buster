@@ -327,16 +327,31 @@ window.__otoriBuster.reportForm = (() => {
     if (existingError) existingError.remove();
 
     const reportData = {
+      // 物件の全データ（ページから取得できたすべて）
       url: params.url || location.href,
       propertyName: params.name || '',
       siteName: params.siteName || '',
       rent: params.rent || 0,
+      managementFee: params.managementFee || 0,
       address: params.address || '',
+      layout: params.layout || '',
+      area: params.area || '',
+      age: params.age != null ? params.age : -1,
+      station: params.station || '',
+      walkMinutes: params.walkMinutes != null ? params.walkMinutes : -1,
+      photoCount: params.photoCount != null ? params.photoCount : -1,
+      company: params.company || '',
+      // スコア情報
       score: params.score || 0,
       level: params.level || '',
+      factors: (params.factors || []).map(f => ({
+        name: f.name, rawScore: f.rawScore, weight: f.weight, reason: f.reason
+      })),
+      // ユーザー入力
       reason: form.reason.value,
       reasonLabel: ns.REPORT_CONFIG.reasons.find(r => r.value === form.reason.value)?.label || '',
       comment: form.comment.value.trim(),
+      // メタデータ
       reportedAt: new Date().toISOString(),
       pageUrl: location.href
     };
