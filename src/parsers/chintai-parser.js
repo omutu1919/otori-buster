@@ -1,6 +1,9 @@
 /**
  * おとり物件バスター - CHINTAI パーサー
- * https://www.chintai.net/
+ * ※ ページロードが重くPuppeteer検証困難。DevTools確認を推奨。
+ *
+ * CHINTAIの一般的なDOM構造（推定 + SUUMO類似構造）:
+ *   .cassetteitem / .building_item / [data-building] (物件カード)
  */
 
 window.__otoriBuster = window.__otoriBuster || {};
@@ -9,7 +12,7 @@ window.__otoriBuster.chintaiParser = (() => {
   'use strict';
 
   const { parserUtils } = window.__otoriBuster;
-  const { safeText, safeCount, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes } = parserUtils;
+  const { safeText, parseRent, parseManagementFee, normalizeLayout, parseAge, parseWalkMinutes, normalizeDigits } = parserUtils;
 
   const SITE_NAME = 'chintai';
 
@@ -17,54 +20,41 @@ window.__otoriBuster.chintaiParser = (() => {
     return location.hostname.endsWith('chintai.net');
   }
 
-  /**
-   * 物件カード1件を解析
-   * @param {HTMLElement} card
-   * @returns {import('../types/index.js').PropertyData}
-   */
-  function parseCard(card) {
-    const name = safeText(card, '.cassetteitem_content-title, .building-name, h3[class*="title"]') ||
-                 safeText(card, '.js-cassetteitem-title');
-
-    const address = safeText(card, '.cassetteitem_detail-col1, [class*="address"]') ||
-                    safeText(card, '.building-address');
-
-    const rentText = safeText(card, '.cassetteitem_price--rent, [class*="price"], .rent-value');
-
-    const feeText = safeText(card, '.cassetteitem_price--administration, [class*="admin"], .kanrihi-value');
-
-    const layoutText = safeText(card, '.cassetteitem_madori, [class*="madori"], .room-madori');
-
-    const areaText = safeText(card, '.cassetteitem_menseki, [class*="menseki"], .room-menseki');
-
-    const photoCount = safeCount(card, '.cassetteitem_object img, [class*="photo"] img, .building-photo img');
-
-    const stationText = safeText(card, '.cassetteitem_detail-col2, [class*="station"], .building-station');
-
-    const ageText = safeText(card, '.cassetteitem_detail-col3 div:first-child, [class*="age"], .building-age');
-
-    return {
-      name,
-      rent: parseRent(rentText),
-      managementFee: parseManagementFee(feeText),
-      address,
-      layout: normalizeLayout(layoutText),
-      photoCount: Math.max(photoCount, 0),
-      area: areaText,
-      age: parseAge(ageText),
-      station: stationText,
-      walkMinutes: parseWalkMinutes(stationText),
-      source: SITE_NAME,
-      element: card
-    };
+  function isDetailPage() {
+    return /\/detail\//.test(location.pathname) || /\/room\//.test(location.pathname);
   }
 
-  function parse() {
+  /**
+   * テーブルまたはdl/dt/ddから値を抽出
+   */
+  function findValue(container, label) {
+    const ths = container.querySelectorAll('th');
+    for (const th of ths) {
+      if (th.textContent.trim().includes(label)) {
+        const td = th.nextElementSibling;
+        if (td) return td.textContent.trim();
+      }
+    }
+    const dts = container.querySelectorAll('dt');
+    for (const dt of dts) {
+      if (dt.textContent.trim().includes(label)) {
+        const dd = dt.nextElementSibling;
+        if (dd) return dd.textContent.trim();
+      }
+    }
+    return '';
+  }
+
+  // === 一覧ページ ===
+
+  function parseListPage() {
     const selectors = [
       '.cassetteitem',
-      '.building-cassette',
-      '.property-cassette',
-      '[data-building-id]'
+      '.building_item',
+      '[data-building-id]',
+      '[data-building]',
+      '.cassette',
+      '.property-cassette'
     ];
 
     let cards = [];
@@ -73,10 +63,55 @@ window.__otoriBuster.chintaiParser = (() => {
       if (cards.length > 0) break;
     }
 
+    // フォールバック: 家賃+間取り+住所を含む要素
+    if (cards.length === 0) {
+      const all = document.querySelectorAll('div, article, section, li');
+      const found = [];
+      for (const el of all) {
+        const text = el.textContent || '';
+        const size = text.length;
+        if (size > 80 && size < 3000 && text.includes('万円') && /[0-9][KDL]/.test(text) && (text.includes('区') || text.includes('市'))) {
+          found.push(el);
+        }
+      }
+      found.sort((a, b) => a.textContent.length - b.textContent.length);
+      cards = found.slice(0, 30);
+    }
+
     const properties = [];
     cards.forEach(card => {
       try {
-        properties.push(parseCard(card));
+        const name = safeText(card, '.cassetteitem_content-title, h2, h3, [class*="building-name"], [class*="title"]') || '';
+        const address = findValue(card, '所在地') || findValue(card, '住所') ||
+                        safeText(card, '.cassetteitem_detail-col1, [class*="address"]') || '';
+
+        const rentText = findValue(card, '賃料') ||
+                         safeText(card, '.cassetteitem_price--rent, [class*="price"], [class*="rent"]') || '';
+        const feeText = findValue(card, '管理費') || findValue(card, '共益費') ||
+                        safeText(card, '.cassetteitem_price--administration, [class*="admin"]') || '';
+        const layoutText = findValue(card, '間取り') ||
+                           safeText(card, '.cassetteitem_madori, [class*="madori"]') || '';
+        const areaText = findValue(card, '面積') ||
+                         safeText(card, '.cassetteitem_menseki, [class*="menseki"]') || '';
+        const stationText = findValue(card, '交通') ||
+                            safeText(card, '.cassetteitem_detail-col2, [class*="station"]') || '';
+        const ageText = findValue(card, '築年') ||
+                        safeText(card, '.cassetteitem_detail-col3 div, [class*="age"]') || '';
+
+        properties.push({
+          name,
+          rent: parseRent(rentText),
+          managementFee: parseManagementFee(feeText),
+          address,
+          layout: normalizeLayout(layoutText),
+          photoCount: -1,
+          area: areaText,
+          age: parseAge(ageText),
+          station: stationText,
+          walkMinutes: parseWalkMinutes(stationText),
+          source: SITE_NAME,
+          element: card
+        });
       } catch (err) {
         console.error('[おとり物件バスター] CHINTAI解析エラー:', err);
       }
@@ -85,9 +120,46 @@ window.__otoriBuster.chintaiParser = (() => {
     return properties;
   }
 
-  return Object.freeze({
-    name: SITE_NAME,
-    canParse,
-    parse
-  });
+  // === 詳細ページ ===
+
+  function parseDetailPage() {
+    const name = safeText(document.body, 'h1, [class*="building-name"], [class*="title"]') || '';
+
+    const address = findValue(document.body, '所在地') || findValue(document.body, '住所');
+    const rentText = findValue(document.body, '賃料');
+    const feeText = findValue(document.body, '管理費') || findValue(document.body, '共益費');
+    const layoutText = findValue(document.body, '間取り');
+    const areaText = findValue(document.body, '面積') || findValue(document.body, '専有面積');
+    const stationText = findValue(document.body, '交通');
+    const ageText = findValue(document.body, '築年') || findValue(document.body, '建築年');
+
+    const photos = document.querySelectorAll('[class*="gallery"] img, [class*="photo"] img, [class*="slider"] img');
+    const targetEl = document.querySelector('h1');
+    if (!targetEl) return [];
+
+    return [{
+      name,
+      rent: parseRent(rentText),
+      managementFee: parseManagementFee(feeText),
+      address,
+      layout: normalizeLayout(layoutText),
+      photoCount: photos.length,
+      area: areaText,
+      age: parseAge(ageText),
+      station: stationText,
+      walkMinutes: parseWalkMinutes(stationText),
+      source: SITE_NAME,
+      element: targetEl
+    }];
+  }
+
+  function parse() {
+    if (isDetailPage()) {
+      try { return parseDetailPage(); }
+      catch (err) { console.error('[おとり物件バスター] CHINTAI詳細エラー:', err); return []; }
+    }
+    return parseListPage();
+  }
+
+  return Object.freeze({ name: SITE_NAME, canParse, parse });
 })();
