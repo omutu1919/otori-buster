@@ -142,6 +142,7 @@
 
     const urls = [...urlToElement.keys()];
     if (!isContextValid()) { shutdown(); return; }
+    try {
     chrome.runtime.sendMessage({ type: 'FETCH_REPORT_COUNTS', urls }, (response) => {
       if (chrome.runtime.lastError || !response || !response.ok) return;
       if (!isContextValid()) return;
@@ -170,6 +171,9 @@
         ns.logger.log(`${updated}件に通報件数を反映`);
       }
     });
+    } catch (_e) {
+      shutdown();
+    }
   }
 
   /**
@@ -252,28 +256,33 @@
       summary[score.level]++;
     });
 
-    chrome.storage.local.set({ scanResult: summary }, () => {
-      if (chrome.runtime.lastError) return;
-    });
-    chrome.runtime.sendMessage({ type: 'SCAN_RESULT', data: summary }).catch(() => {});
+    try {
+      chrome.storage.local.set({ scanResult: summary }, () => {
+        if (chrome.runtime.lastError) return;
+      });
+      chrome.runtime.sendMessage({ type: 'SCAN_RESULT', data: summary }).catch(() => {});
+    } catch (_e) {
+      shutdown();
+    }
   }
 
   /**
    * 初期化
    */
   function init() {
-    chrome.storage.local.get({ enabled: true }, (settings) => {
-      if (!settings.enabled) return;
+    try {
+      chrome.storage.local.get({ enabled: true }, (settings) => {
+        if (chrome.runtime.lastError || !settings.enabled) return;
 
-      // 初回実行
-      run();
-
-      // 新しい物件カードの追加を定期チェック（無限スクロール対応）
-      // MutationObserverは自分のDOM変更で無限ループするためsetIntervalを使用
-      intervalId = setInterval(() => {
         run();
-      }, CHECK_INTERVAL_MS);
-    });
+
+        intervalId = setInterval(() => {
+          run();
+        }, CHECK_INTERVAL_MS);
+      });
+    } catch (_e) {
+      shutdown();
+    }
   }
 
   if (document.readyState === 'loading') {
