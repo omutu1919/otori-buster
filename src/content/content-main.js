@@ -144,6 +144,7 @@
     if (!isContextValid()) { shutdown(); return; }
     try {
     chrome.runtime.sendMessage({ type: 'FETCH_REPORT_COUNTS', urls }, (response) => {
+      try {
       if (chrome.runtime.lastError || !response || !response.ok) return;
       if (!isContextValid()) return;
 
@@ -170,6 +171,7 @@
         saveSummary(currentSiteName, latestScores);
         ns.logger.log(`${updated}件に通報件数を反映`);
       }
+      } catch (_e) { shutdown(); }
     });
     } catch (_e) {
       shutdown();
@@ -258,8 +260,14 @@
 
     try {
       chrome.storage.local.set({ scanResult: summary }, () => {
-        if (chrome.runtime.lastError) return;
+        try { void chrome.runtime.lastError; } catch (_e) { /* context gone */ }
       });
+    } catch (_e) {
+      shutdown();
+      return;
+    }
+
+    try {
       chrome.runtime.sendMessage({ type: 'SCAN_RESULT', data: summary }).catch(() => {});
     } catch (_e) {
       shutdown();
@@ -272,7 +280,7 @@
   function init() {
     try {
       chrome.storage.local.get({ enabled: true }, (settings) => {
-        if (chrome.runtime.lastError || !settings.enabled) return;
+        try { if (chrome.runtime.lastError || !settings.enabled) return; } catch (_e) { return; }
 
         run();
 
