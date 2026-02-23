@@ -146,6 +146,17 @@
     const popup = document.querySelector('.popup');
     if (enabled) {
       popup.classList.remove('popup--disabled');
+      chrome.storage.local.get('scanResult', (result) => {
+        if (chrome.runtime.lastError) return;
+        if (result.scanResult) {
+          showSummary(result.scanResult);
+        } else {
+          statusIcon.textContent = '--';
+          statusIcon.style.background = '#e0e0e0';
+          statusText.textContent = '対応サイトで物件一覧を開いてください';
+          summarySection.style.display = 'none';
+        }
+      });
     } else {
       popup.classList.add('popup--disabled');
       statusIcon.textContent = '--';
