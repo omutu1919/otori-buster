@@ -269,7 +269,7 @@ window.__otoriBuster.overlay = (() => {
       const url = escapeHtml(aff.buildUrl(link.url));
       const bg = link.color || '#FF9900';
       return `<a href="${url}" target="_blank" rel="noopener" class="otori-panel__ad" style="background:linear-gradient(135deg, ${bg}, ${bg}dd);position:relative;">
-        <span class="otori-panel__ad-label">PR</span>
+        <span class="otori-panel__ad-label">広告</span>
         <span class="otori-panel__ad-icon">${escapeHtml(link.icon || '')}</span>
         <span class="otori-panel__ad-body">
           <span class="otori-panel__ad-title">${escapeHtml(link.title)}</span>

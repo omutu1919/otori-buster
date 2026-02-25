@@ -326,6 +326,13 @@ body {
   line-height: 1.6;
 }
 
+.popup__affiliate-disclosure {
+  margin-top: 6px;
+  font-size: 10px !important;
+  color: #aaa !important;
+  line-height: 1.5;
+}
+
 .popup__version {
   margin-top: 4px;
   font-size: 10px !important;
