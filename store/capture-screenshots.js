@@ -33,6 +33,44 @@ const path = require('path');
     console.log('screenshot-2-popup.png saved');
   }
 
+  // Promo tiles
+  const promoPath = path.resolve(__dirname, 'promo-tile.html');
+  await page.goto(`file://${promoPath}`, { waitUntil: 'networkidle0' });
+
+  // 小タイル 440x280
+  await page.setViewport({ width: 440, height: 280 });
+  const tileSmall = await page.$('#tileSmall');
+  if (tileSmall) {
+    await tileSmall.screenshot({
+      path: path.resolve(__dirname, 'promo-small-440x280.png'),
+      type: 'png',
+    });
+    console.log('promo-small-440x280.png saved');
+  }
+
+  // 大タイル 920x680
+  await page.setViewport({ width: 920, height: 680 });
+  const tileLarge = await page.$('#tileLarge');
+  if (tileLarge) {
+    await tileLarge.screenshot({
+      path: path.resolve(__dirname, 'promo-large-920x680.png'),
+      type: 'png',
+    });
+    console.log('promo-large-920x680.png saved');
+  }
+
+  // マーキータイル 1400x560 (JPEG、アルファなし)
+  await page.setViewport({ width: 1400, height: 560 });
+  const tileMarquee = await page.$('#tileMarquee');
+  if (tileMarquee) {
+    await tileMarquee.screenshot({
+      path: path.resolve(__dirname, 'promo-marquee-1400x560.jpg'),
+      type: 'jpeg',
+      quality: 95,
+    });
+    console.log('promo-marquee-1400x560.jpg saved');
+  }
+
   await browser.close();
   console.log('Done!');
 })();

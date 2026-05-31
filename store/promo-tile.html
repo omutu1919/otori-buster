@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Promo Tile</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #eee; padding: 40px; font-family: 'Hiragino Sans', 'Noto Sans JP', 'Segoe UI', sans-serif; }
+
+    .tile-small {
+      width: 440px;
+      height: 280px;
+      background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #3949ab 100%);
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tile-small::before {
+      content: "";
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+    }
+
+    .tile-small::after {
+      content: "";
+      position: absolute;
+      bottom: -40px;
+      left: -40px;
+      width: 150px;
+      height: 150px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 50%;
+    }
+
+    .tile-icon {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+    }
+
+    .tile-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .tile-sub {
+      font-size: 13px;
+      opacity: 0.85;
+      text-align: center;
+      line-height: 1.6;
+      max-width: 360px;
+    }
+
+    .tile-badges {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .tile-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .tile-badge--danger { background: #f44336; }
+    .tile-badge--warning { background: #ff9800; }
+    .tile-badge--safe { background: #4caf50; }
+
+    /* 大タイル */
+    .tile-large {
+      width: 920px;
+      height: 680px;
+      background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #3949ab 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      margin-top: 40px;
+    }
+
+    .tile-large .tile-icon { width: 96px; height: 96px; margin-bottom: 24px; }
+    .tile-large .tile-title { font-size: 44px; margin-bottom: 12px; }
+    .tile-large .tile-sub { font-size: 18px; max-width: 700px; }
+    .tile-large .tile-badges { margin-top: 24px; gap: 12px; }
+    .tile-large .tile-badge { padding: 6px 18px; font-size: 14px; border-radius: 16px; }
+
+    /* マーキータイル 1400x560 */
+    .tile-marquee {
+      width: 1400px;
+      height: 560px;
+      background: linear-gradient(135deg, #1a237e 0%, #283593 40%, #3949ab 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      margin-top: 40px;
+    }
+
+    .tile-marquee__left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+    }
+
+    .tile-marquee__right {
+      flex: 0 0 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tile-marquee__sites {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tile-marquee__sites span {
+      background: rgba(255,255,255,0.12);
+      padding: 10px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 小タイル 440x280 -->
+  <div class="tile-small" id="tileSmall">
+    <img class="tile-icon" src="../icons/icon128.png" alt="icon">
+    <div class="tile-title">おとり物件バスター</div>
+    <div class="tile-sub">不動産サイトの物件をリアルタイム分析<br>おとり物件の可能性をスコア表示</div>
+    <div class="tile-badges">
+      <span class="tile-badge tile-badge--danger">82 危険</span>
+      <span class="tile-badge tile-badge--warning">52 注意</span>
+      <span class="tile-badge tile-badge--safe">12 安全</span>
+    </div>
+  </div>
+
+  <!-- マーキータイル 1400x560 -->
+  <div class="tile-marquee" id="tileMarquee">
+    <div class="tile-marquee__left">
+      <img class="tile-icon" src="../icons/icon128.png" alt="icon" style="width:80px;height:80px;margin-bottom:20px;">
+      <div class="tile-title" style="font-size:40px;">おとり物件バスター</div>
+      <div class="tile-sub" style="font-size:16px;max-width:500px;">不動産サイトの物件をリアルタイム分析。おとり物件の可能性をスコア表示。</div>
+      <div class="tile-badges" style="margin-top:20px;gap:10px;">
+        <span class="tile-badge tile-badge--danger" style="padding:6px 16px;font-size:13px;">82 危険</span>
+        <span class="tile-badge tile-badge--warning" style="padding:6px 16px;font-size:13px;">52 注意</span>
+        <span class="tile-badge tile-badge--safe" style="padding:6px 16px;font-size:13px;">12 安全</span>
+      </div>
+    </div>
+    <div class="tile-marquee__right">
+      <div class="tile-marquee__sites">
+        <span>SUUMO</span><span>HOME'S</span><span>at home</span><span>CHINTAI</span><span>Yahoo!不動産</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 大タイル 920x680 -->
+  <div class="tile-large" id="tileLarge">
+    <img class="tile-icon" src="../icons/icon128.png" alt="icon">
+    <div class="tile-title">おとり物件バスター</div>
+    <div class="tile-sub">不動産サイトの物件をリアルタイム分析<br>おとり物件の可能性をスコア表示</div>
+    <div class="tile-badges">
+      <span class="tile-badge tile-badge--danger">82 危険</span>
+      <span class="tile-badge tile-badge--warning">52 注意</span>
+      <span class="tile-badge tile-badge--safe">12 安全</span>
+    </div>
+  </div>
+</body>
+</html>
