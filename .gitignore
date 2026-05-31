@@ -2,3 +2,11 @@ node_modules/
 package-lock.json
 package.json
 store/*.zip
+
+# 秘密・環境変数（漏洩防止）
+.env
+*.env
+
+# 通報データ（個人情報を含むため絶対にコミットしない）
+server/reports.json
+reports.json
